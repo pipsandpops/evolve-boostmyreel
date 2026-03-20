@@ -1,0 +1,172 @@
+@import "tailwindcss";
+
+* { box-sizing: border-box; }
+
+:root {
+  --grad: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #db2777 100%);
+  --grad-subtle: linear-gradient(135deg, #eef2ff 0%, #f5f3ff 50%, #fdf2f8 100%);
+  --primary: #4f46e5;
+  --primary-mid: #7c3aed;
+  --primary-end: #db2777;
+  --bg: #ffffff;
+  --bg-subtle: #f8fafc;
+  --border: #e2e8f0;
+  --border-light: #f1f5f9;
+  --text: #0f172a;
+  --text-2: #475569;
+  --text-3: #94a3b8;
+  --radius: 16px;
+  --radius-sm: 10px;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.06);
+  --shadow: 0 4px 16px rgba(0,0,0,0.07);
+  --shadow-lg: 0 12px 40px rgba(0,0,0,0.1);
+  --shadow-color: 0 8px 32px rgba(79,70,229,0.18);
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root { min-height: 100vh; }
+
+.gradient { background: var(--grad); }
+
+.gradient-text {
+  background: var(--grad);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--grad);
+  color: white;
+  font-weight: 600;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 14px rgba(79,70,229,0.35);
+  letter-spacing: -0.01em;
+}
+.btn-primary:hover { opacity: 0.92; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(79,70,229,0.45); }
+.btn-primary:active { transform: translateY(0); box-shadow: var(--shadow-color); }
+.btn-primary:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; box-shadow: none; }
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: white;
+  color: var(--text);
+  font-weight: 600;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-secondary:hover { border-color: #cbd5e1; background: var(--bg-subtle); }
+
+.card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.card-hover {
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+.card-hover:hover {
+  box-shadow: var(--shadow);
+  transform: translateY(-1px);
+}
+
+/* Animated gradient border for drop zone */
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.drop-zone-active {
+  background-size: 200% 200%;
+  animation: gradientShift 2s ease infinite;
+}
+
+/* Step connector line */
+.step-line {
+  flex: 1;
+  height: 2px;
+  background: var(--border-light);
+  margin: 0 8px;
+  position: relative;
+  overflow: hidden;
+}
+.step-line-fill {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  background: var(--grad);
+  transition: width 0.6s ease;
+}
+
+/* Pulse animation for active step */
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 rgba(79,70,229,0.35); }
+  70% { box-shadow: 0 0 0 8px rgba(79,70,229,0); }
+  100% { box-shadow: 0 0 0 0 rgba(79,70,229,0); }
+}
+.pulse { animation: pulse-ring 1.5s ease-out infinite; }
+
+/* Demo typewriter */
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fadeSlideIn 0.35s ease forwards; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
+
+/* Badge */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+/* Tag pill */
+.tag-pill {
+  padding: 4px 12px;
+  border-radius: 99px;
+  background: #f1f5f9;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #334155;
+  cursor: default;
+  transition: all 0.15s;
+  border: 1px solid transparent;
+}
+.tag-pill:hover {
+  background: var(--grad);
+  color: white;
+  border-color: transparent;
+}
