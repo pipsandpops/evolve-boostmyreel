@@ -83,7 +83,7 @@ function App() {
               <Zap size={17} color="white" fill="white" />
             </div>
             <span style={{ fontSize: 17, fontWeight: 700, color: '#0f172a', letterSpacing: -0.5 }}>
-              Reel<span className="gradient-text">Booster</span>
+              Boost<span className="gradient-text">MyReel</span>
             </span>
           </button>
 
@@ -287,7 +287,7 @@ function App() {
               }}>
                 <Zap size={13} color="white" fill="white" />
               </div>
-              <span style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>ReelBooster</span>
+              <span style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>BoostMyReel</span>
             </div>
             <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
               {[
@@ -310,7 +310,7 @@ function App() {
               </button>
             </div>
             <p style={{ color: '#94a3b8', fontSize: 12, margin: 0 }}>
-              © 2025 ReelBooster · Powered by Whisper + Claude AI
+              © 2025 BoostMyReel · Powered by Whisper + Claude AI
             </p>
           </div>
         </div>

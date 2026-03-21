@@ -19,7 +19,7 @@ export const PLANS: Plan[] = [
     name: 'Starter',
     price: 49,
     unit: 'per request',
-    description: 'Perfect for trying out ReelBooster on a single video.',
+    description: 'Perfect for trying out BoostMyReel on a single video.',
     features: [
       '1 video boost',
       'AI viral hook',

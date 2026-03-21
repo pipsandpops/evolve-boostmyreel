@@ -21,7 +21,7 @@ export function AboutSection() {
             <span className="gradient-text">for creators</span>
           </h2>
           <p style={{ color: '#64748b', fontSize: 15, margin: '0 auto', maxWidth: 560, lineHeight: 1.7 }}>
-            ReelBooster was born from a simple frustration — spending hours writing captions
+            BoostMyReel was born from a simple frustration — spending hours writing captions
             and subtitles for short-form videos. We built the tool we always wanted.
           </p>
         </div>

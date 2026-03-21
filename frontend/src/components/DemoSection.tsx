@@ -64,7 +64,7 @@ export function DemoSection() {
             See what you get — instantly
           </h2>
           <p style={{ color: '#64748b', fontSize: 15, margin: 0 }}>
-            Here's an example of the content ReelBooster generates for a typical creator video
+            Here's an example of the content BoostMyReel generates for a typical creator video
           </p>
         </div>
 
