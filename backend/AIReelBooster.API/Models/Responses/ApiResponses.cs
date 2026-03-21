@@ -22,7 +22,19 @@ public record AnalysisResultResponse(
     string Caption,
     List<string> Hashtags,
     List<SubtitleEntryDto> Subtitles,
-    VideoMetadataDto? Metadata
+    VideoMetadataDto? Metadata,
+    ViralScoreDto? ViralScore
+);
+
+public record ViralScoreDto(
+    int HookScore,
+    int EmotionScore,
+    int ClarityScore,
+    int TrendScore,
+    int EngagementScore,
+    int ViralScore,
+    string Problem,
+    string ImprovedHook
 );
 
 public record SubtitleEntryDto(

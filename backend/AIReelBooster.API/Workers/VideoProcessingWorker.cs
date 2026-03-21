@@ -96,13 +96,27 @@ public class VideoProcessingWorker : BackgroundService
 
             var (hook, caption, hashtags) = await aiGeneration.GenerateAsync(transcript, ct);
 
-            // Step 7: Complete
+            // Step 7: Viral score analysis
+            SetStatus(job, JobStatus.GeneratingAI, 88, "Calculating viral score...");
+            ViralScoreResult? viralScore = null;
+            try
+            {
+                viralScore = await aiGeneration.AnalyzeViralScoreAsync(hook, caption, transcript, ct);
+                _logger.LogInformation("Job {JobId}: Viral score = {Score}", jobId, viralScore.ViralScore);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Job {JobId}: Viral score analysis failed (non-fatal)", jobId);
+            }
+
+            // Step 8: Complete
             job.AnalysisResult = new AnalysisResult
             {
                 Hook = hook,
                 Caption = caption,
                 Hashtags = hashtags,
-                Subtitles = subtitles
+                Subtitles = subtitles,
+                ViralScore = viralScore
             };
 
             SetStatus(job, JobStatus.Complete, 100, null);

@@ -4,6 +4,7 @@ import { CaptionCard } from './CaptionCard';
 import { HashtagCard } from './HashtagCard';
 import { SubtitlePanel } from './SubtitlePanel';
 import { VideoPreview } from './VideoPreview';
+import { ViralScoreCard } from './ViralScoreCard';
 import { Sparkles } from 'lucide-react';
 
 interface ResultsPanelProps {
@@ -49,6 +50,7 @@ export function ResultsPanel({ result, jobId }: ResultsPanelProps) {
 
         {/* Right: AI results */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {result.viralScore && <ViralScoreCard viralScore={result.viralScore} />}
           <HookCard hook={result.hook} />
           <CaptionCard caption={result.caption} />
           <HashtagCard hashtags={result.hashtags} />

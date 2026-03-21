@@ -35,6 +35,17 @@ export interface VideoMetadata {
   frameRate: number | null;
 }
 
+export interface ViralScore {
+  hookScore: number;
+  emotionScore: number;
+  clarityScore: number;
+  trendScore: number;
+  engagementScore: number;
+  viralScore: number;
+  problem: string;
+  improvedHook: string;
+}
+
 export interface AnalysisResult {
   jobId: string;
   hook: string;
@@ -42,6 +53,7 @@ export interface AnalysisResult {
   hashtags: string[];
   subtitles: SubtitleEntry[];
   metadata: VideoMetadata | null;
+  viralScore: ViralScore | null;
 }
 
 export interface BurnSubtitlesResponse {

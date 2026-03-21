@@ -51,7 +51,17 @@ public class AnalysisController : ControllerBase
                 FormatTime(s.End),
                 s.Text
             )).ToList(),
-            new VideoMetadataDto(job.DurationSeconds, job.Width, job.Height, job.FrameRate)
+            new VideoMetadataDto(job.DurationSeconds, job.Width, job.Height, job.FrameRate),
+            result.ViralScore == null ? null : new ViralScoreDto(
+                result.ViralScore.HookScore,
+                result.ViralScore.EmotionScore,
+                result.ViralScore.ClarityScore,
+                result.ViralScore.TrendScore,
+                result.ViralScore.EngagementScore,
+                result.ViralScore.ViralScore,
+                result.ViralScore.Problem,
+                result.ViralScore.ImprovedHook
+            )
         ));
     }
 
