@@ -4,6 +4,7 @@ using AIReelBooster.API.Middleware;
 using AIReelBooster.API.Services;
 using AIReelBooster.API.Services.Interfaces;
 using AIReelBooster.API.Workers;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,6 +24,15 @@ builder.Services.AddCors(opts =>
          .AllowAnyMethod()
     )
 );
+
+// SQLite database for user/payment tracking
+var dbPath = Environment.GetEnvironmentVariable("DB_PATH") ?? "./data/users.db";
+Directory.CreateDirectory(Path.GetDirectoryName(dbPath)!);
+builder.Services.AddDbContext<AppDbContext>(opts =>
+    opts.UseSqlite($"Data Source={dbPath}"));
+
+// Generic HTTP client (used by PaymentController for Razorpay API)
+builder.Services.AddHttpClient();
 
 // Controllers
 builder.Services.AddControllers();
@@ -50,6 +60,13 @@ builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(opts 
 });
 
 var app = builder.Build();
+
+// Ensure SQLite DB + tables exist
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.EnsureCreated();
+}
 
 // Middleware pipeline
 app.UseMiddleware<ErrorHandlingMiddleware>();

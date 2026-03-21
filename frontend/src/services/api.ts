@@ -63,4 +63,35 @@ export const api = {
       body: JSON.stringify({ improvedHook }),
     });
   },
+
+  getUserStatus(userId: string): Promise<{ isPaid: boolean; plan: string }> {
+    return request<{ isPaid: boolean; plan: string }>(
+      `/user/status?userId=${encodeURIComponent(userId)}`
+    );
+  },
+
+  createOrder(userId: string, plan: string): Promise<{ orderId: string; amount: number; currency: string; keyId: string }> {
+    return request<{ orderId: string; amount: number; currency: string; keyId: string }>(
+      '/payment/create-order',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, plan }),
+      }
+    );
+  },
+
+  verifyPayment(
+    userId: string,
+    paymentId: string,
+    orderId: string,
+    signature: string,
+    plan: string
+  ): Promise<{ success: boolean }> {
+    return request<{ success: boolean }>('/payment/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, paymentId, orderId, signature, plan }),
+    });
+  },
 };

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import './index.css';
 import { useVideoUpload } from './hooks/useVideoUpload';
+import { useUserStatus } from './hooks/useUserStatus';
 import { VideoUploader } from './components/VideoUploader';
 import { ProcessingStatus } from './components/ProcessingStatus';
 import { ResultsPanel } from './components/ResultsPanel';
@@ -21,7 +22,8 @@ function App() {
   const [page, setPage] = useState<Page>('home');
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isPaidUser, setIsPaidUser] = useState(false);
+  const { userId, status, refresh: refreshUserStatus } = useUserStatus();
+  const isPaidUser = status.isPaid;
 
   const scrollTo = (id: string) => {
     setMobileMenuOpen(false);
@@ -50,8 +52,9 @@ function App() {
     return (
       <PaymentPage
         plan={selectedPlan}
+        userId={userId}
         onBack={handlePaymentBack}
-        onSuccess={() => { setIsPaidUser(true); setPage('home'); window.scrollTo(0, 0); }}
+        onSuccess={async () => { await refreshUserStatus(); setPage('home'); window.scrollTo(0, 0); }}
       />
     );
   }
