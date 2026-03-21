@@ -168,7 +168,7 @@ export function PricingSection({ onSelectPlan }: PricingSectionProps) {
                 className={plan.highlight ? 'btn-primary' : 'btn-secondary'}
                 style={{ width: '100%', padding: '12px', fontSize: 14, borderRadius: 12, marginBottom: 20 }}
               >
-                {plan.id === 'starter' ? 'Pay ₹9 Now' : `Get ${plan.name}`}
+                {`Get ${plan.name}`}
               </button>
 
               {/* Divider */}
