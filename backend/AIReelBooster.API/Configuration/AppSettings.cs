@@ -6,6 +6,13 @@ public class AppSettings
     public WhisperSettings Whisper { get; set; } = new();
     public ClaudeSettings Claude { get; set; } = new();
     public StorageSettings Storage { get; set; } = new();
+    public RazorpaySettings Razorpay { get; set; } = new();
+}
+
+public class RazorpaySettings
+{
+    public string KeyId { get; set; } = string.Empty;
+    public string KeySecret { get; set; } = string.Empty;
 }
 
 public class FFmpegSettings

@@ -1,10 +1,7 @@
 import { useState } from 'react';
-import { ArrowLeft, CreditCard, Smartphone, Lock, Check, ShieldCheck, ExternalLink } from 'lucide-react';
+import { ArrowLeft, CreditCard, Smartphone, Lock, Check, ShieldCheck } from 'lucide-react';
 import type { Plan } from './PricingSection';
-
-// ─── Razorpay config ────────────────────────────────────────────────────────
-// Replace with your actual Razorpay Key ID from https://dashboard.razorpay.com
-const RAZORPAY_KEY_ID = 'rzp_test_REPLACE_WITH_YOUR_KEY';
+import { api } from '../services/api';
 
 declare global {
   interface Window {
@@ -15,6 +12,7 @@ declare global {
 
 interface PaymentPageProps {
   plan: Plan;
+  userId: string;
   onBack: () => void;
   onSuccess?: () => void;
 }
@@ -23,7 +21,7 @@ type PayState = 'idle' | 'processing' | 'success' | 'error';
 
 const GST_RATE = 0.18;
 
-export function PaymentPage({ plan, onBack, onSuccess }: PaymentPageProps) {
+export function PaymentPage({ plan, userId, onBack, onSuccess }: PaymentPageProps) {
   const [payState, setPayState]   = useState<PayState>('idle');
   const [paymentId, setPaymentId] = useState('');
   const [errMsg, setErrMsg]       = useState('');
@@ -44,43 +42,58 @@ export function PaymentPage({ plan, onBack, onSuccess }: PaymentPageProps) {
   };
 
   // ── open Razorpay checkout ─────────────────────────────────────────
-  const handlePay = () => {
+  const handlePay = async () => {
     if (!validate()) return;
     setPayState('processing');
 
-    const options = {
-      key: RAZORPAY_KEY_ID,
-      amount: total * 100,            // in paise
-      currency: 'INR',
-      name: 'BoostMyReel',
-      description: `${plan.name} Plan – ${plan.unit}`,
-      prefill: { name, email },
-      theme: { color: '#6366f1' },
-      method: {
-        card: true,
-        upi: true,
-        netbanking: true,
-        wallet: true,
-      },
-      handler: (response: { razorpay_payment_id: string }) => {
-        setPaymentId(response.razorpay_payment_id);
-        setPayState('success');
-        onSuccess?.();
-      },
-      modal: {
-        ondismiss: () => setPayState('idle'),
-      },
-    };
-
     try {
+      // 1. Create order on backend → get real orderId + keyId
+      const order = await api.createOrder(userId, plan.id);
+
+      const options = {
+        key: order.keyId,
+        amount: order.amount,
+        currency: order.currency,
+        name: 'BoostMyReel',
+        description: `${plan.name} Plan – ${plan.unit}`,
+        order_id: order.orderId,
+        prefill: { name, email },
+        theme: { color: '#6366f1' },
+        method: { card: true, upi: true, netbanking: true, wallet: true },
+        handler: async (response: {
+          razorpay_payment_id: string;
+          razorpay_order_id: string;
+          razorpay_signature: string;
+        }) => {
+          try {
+            // 2. Verify payment signature on backend → store user as paid
+            await api.verifyPayment(
+              userId,
+              response.razorpay_payment_id,
+              response.razorpay_order_id,
+              response.razorpay_signature,
+              plan.id,
+            );
+            setPaymentId(response.razorpay_payment_id);
+            setPayState('success');
+            onSuccess?.();
+          } catch {
+            setErrMsg('Payment received but verification failed. Contact support.');
+            setPayState('error');
+          }
+        },
+        modal: { ondismiss: () => setPayState('idle') },
+      };
+
       const rzp = new window.Razorpay(options);
       rzp.on('payment.failed', (resp: { error: { description: string } }) => {
         setErrMsg(resp.error?.description ?? 'Payment failed. Please try again.');
         setPayState('error');
       });
       rzp.open();
-    } catch {
-      setErrMsg('Could not load payment gateway. Check your Razorpay Key ID.');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Could not start payment. Try again.';
+      setErrMsg(msg);
       setPayState('error');
     }
   };
@@ -229,26 +242,6 @@ export function PaymentPage({ plan, onBack, onSuccess }: PaymentPageProps) {
             </span>
           </div>
 
-          {/* Razorpay setup note */}
-          {RAZORPAY_KEY_ID === 'rzp_test_REPLACE_WITH_YOUR_KEY' && (
-            <div style={{
-              marginTop: 18, background: '#fffbeb', border: '1px solid #fcd34d',
-              borderRadius: 10, padding: '12px 14px',
-            }}>
-              <p style={{ fontSize: 12, color: '#92400e', margin: '0 0 4px', fontWeight: 600 }}>
-                ⚙ Developer note
-              </p>
-              <p style={{ fontSize: 12, color: '#92400e', margin: 0, lineHeight: 1.5 }}>
-                Replace <code>RAZORPAY_KEY_ID</code> in <code>PaymentPage.tsx</code> with your
-                Key ID from the{' '}
-                <a href="https://dashboard.razorpay.com/app/keys" target="_blank" rel="noreferrer"
-                  style={{ color: '#b45309', fontWeight: 600 }}>
-                  Razorpay Dashboard <ExternalLink size={10} style={{ verticalAlign: 'middle' }} />
-                </a>.
-                Use <strong>rzp_test_…</strong> for testing, <strong>rzp_live_…</strong> for production.
-              </p>
-            </div>
-          )}
         </div>
 
         {/* Right: Order summary */}
