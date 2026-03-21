@@ -8,9 +8,10 @@ import { DemoSection } from './components/DemoSection';
 import { PricingSection, type Plan } from './components/PricingSection';
 import { AboutSection } from './components/AboutSection';
 import { PaymentPage } from './components/PaymentPage';
+import { ContactPage } from './components/ContactPage';
 import { Sparkles, RotateCcw, Zap, FileText, Hash, Captions, Menu, X } from 'lucide-react';
 
-type Page = 'home' | 'payment';
+type Page = 'home' | 'payment' | 'contact';
 
 function App() {
   const { state, jobId, jobStatus, progressPercent, result, error, upload, reset } = useVideoUpload();
@@ -37,6 +38,11 @@ function App() {
     setSelectedPlan(null);
     setTimeout(() => scrollTo('pricing'), 100);
   };
+
+  // ── Contact page ──────────────────────────────────────────────────
+  if (page === 'contact') {
+    return <ContactPage onBack={() => { setPage('home'); window.scrollTo(0, 0); }} />;
+  }
 
   // ── Payment page ──────────────────────────────────────────────────
   if (page === 'payment' && selectedPlan) {
@@ -93,6 +99,17 @@ function App() {
                 {l.label}
               </button>
             ))}
+            <button onClick={() => { setPage('contact'); window.scrollTo(0, 0); }} style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              padding: '6px 14px', borderRadius: 8,
+              fontSize: 14, fontWeight: 500, color: '#475569',
+              transition: 'all 0.15s',
+            }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#0f172a'; (e.currentTarget as HTMLElement).style.background = '#f8fafc'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#475569'; (e.currentTarget as HTMLElement).style.background = 'none'; }}
+            >
+              Contact
+            </button>
           </div>
 
           {/* Right actions */}
@@ -137,6 +154,13 @@ function App() {
                 {l.label}
               </button>
             ))}
+            <button onClick={() => { setMobileMenuOpen(false); setPage('contact'); window.scrollTo(0, 0); }} style={{
+              display: 'block', width: '100%', textAlign: 'left',
+              background: 'none', border: 'none', cursor: 'pointer',
+              padding: '10px 0', fontSize: 15, fontWeight: 500, color: '#475569',
+            }}>
+              Contact
+            </button>
           </div>
         )}
       </nav>
@@ -253,7 +277,7 @@ function App() {
               </div>
               <span style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>ReelBooster</span>
             </div>
-            <div style={{ display: 'flex', gap: 20 }}>
+            <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
               {[
                 { label: 'Features', id: 'demo' },
                 { label: 'Pricing', id: 'pricing' },
@@ -266,6 +290,12 @@ function App() {
                   {l.label}
                 </button>
               ))}
+              <button onClick={() => { setPage('contact'); window.scrollTo(0, 0); }} style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                fontSize: 13, color: '#64748b', fontWeight: 500, padding: 0,
+              }}>
+                Contact
+              </button>
             </div>
             <p style={{ color: '#94a3b8', fontSize: 12, margin: 0 }}>
               © 2025 ReelBooster · Powered by Whisper + Claude AI
