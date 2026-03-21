@@ -52,7 +52,7 @@ export function PaymentPage({ plan, onBack, onSuccess }: PaymentPageProps) {
       key: RAZORPAY_KEY_ID,
       amount: total * 100,            // in paise
       currency: 'INR',
-      name: 'ReelBooster',
+      name: 'BoostMyReel',
       description: `${plan.name} Plan – ${plan.unit}`,
       prefill: { name, email },
       theme: { color: '#6366f1' },

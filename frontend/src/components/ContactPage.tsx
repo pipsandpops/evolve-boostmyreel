@@ -90,7 +90,7 @@ export function ContactPage({ onBack }: ContactPageProps) {
             In the meantime, feel free to upload another video and boost it!
           </p>
           <button onClick={onBack} className="btn-primary" style={{ width: '100%', padding: 13, fontSize: 15 }}>
-            Back to ReelBooster
+            Back to BoostMyReel
           </button>
         </div>
       </div>
@@ -234,8 +234,8 @@ export function ContactPage({ onBack }: ContactPageProps) {
                   {
                     icon: <Mail size={16} color="#4f46e5" />,
                     label: 'Email',
-                    value: 'support@reelbooster.in',
-                    href: 'mailto:support@reelbooster.in',
+                    value: 'support@boostmyreel.com',
+                    href: 'mailto:support@boostmyreel.com',
                   },
                   {
                     icon: <Clock size={16} color="#7c3aed" />,
@@ -282,10 +282,10 @@ export function ContactPage({ onBack }: ContactPageProps) {
               </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {[
-                  { icon: <Instagram size={16} />, label: 'Instagram',  handle: '@reelbooster',     color: '#e1306c', bg: '#fff1f5', href: '#' },
-                  { icon: <Linkedin size={16} />,  label: 'LinkedIn',   handle: 'ReelBooster',      color: '#0a66c2', bg: '#eff6ff', href: '#' },
-                  { icon: <Youtube size={16} />,   label: 'YouTube',    handle: 'ReelBooster Tips', color: '#ff0000', bg: '#fff5f5', href: '#' },
-                  { icon: <Twitter size={16} />,   label: 'Twitter / X',handle: '@reelbooster_ai',  color: '#0f172a', bg: '#f8fafc', href: '#' },
+                  { icon: <Instagram size={16} />, label: 'Instagram',  handle: '@boostmyreel',     color: '#e1306c', bg: '#fff1f5', href: '#' },
+                  { icon: <Linkedin size={16} />,  label: 'LinkedIn',   handle: 'BoostMyReel',      color: '#0a66c2', bg: '#eff6ff', href: '#' },
+                  { icon: <Youtube size={16} />,   label: 'YouTube',    handle: 'BoostMyReel Tips', color: '#ff0000', bg: '#fff5f5', href: '#' },
+                  { icon: <Twitter size={16} />,   label: 'Twitter / X',handle: '@boostmyreel_ai',  color: '#0f172a', bg: '#f8fafc', href: '#' },
                 ].map(s => (
                   <a
                     key={s.label}
