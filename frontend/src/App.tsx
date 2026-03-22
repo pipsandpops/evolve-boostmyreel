@@ -10,9 +10,10 @@ import { PricingSection, type Plan } from './components/PricingSection';
 import { AboutSection } from './components/AboutSection';
 import { PaymentPage } from './components/PaymentPage';
 import { ContactPage } from './components/ContactPage';
-import { Sparkles, RotateCcw, Zap, FileText, Hash, Captions, Menu, X } from 'lucide-react';
+import { ImageAnalysisPage } from './components/image/ImageAnalysisPage';
+import { Sparkles, RotateCcw, Zap, FileText, Hash, Captions, Menu, X, ImagePlus } from 'lucide-react';
 
-type Page = 'home' | 'payment' | 'contact';
+type Page = 'home' | 'payment' | 'contact' | 'image-analysis';
 
 function App() {
   const { state, jobId, jobStatus, progressPercent, result, error, upload, reset } = useVideoUpload();
@@ -45,6 +46,17 @@ function App() {
   // ── Contact page ──────────────────────────────────────────────────
   if (page === 'contact') {
     return <ContactPage onBack={() => { setPage('home'); window.scrollTo(0, 0); }} />;
+  }
+
+  // ── Image Analysis page ────────────────────────────────────────────
+  if (page === 'image-analysis') {
+    return (
+      <ImageAnalysisPage
+        isPaidUser={isPaidUser}
+        onBack={() => { setPage('home'); window.scrollTo(0, 0); }}
+        onUpgrade={() => { setPage('payment'); setSelectedPlan(null); setTimeout(() => scrollTo('pricing'), 100); }}
+      />
+    );
   }
 
   // ── Payment page ──────────────────────────────────────────────────
@@ -120,6 +132,17 @@ function App() {
             >
               Contact
             </button>
+            {/* Image analysis CTA */}
+            <button onClick={() => { setPage('image-analysis'); window.scrollTo(0, 0); }} style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              background: 'linear-gradient(135deg, #7c3aed15, #a855f715)',
+              border: '1px solid #c4b5fd', cursor: 'pointer',
+              padding: '6px 14px', borderRadius: 8,
+              fontSize: 14, fontWeight: 600, color: '#7c3aed',
+              transition: 'all 0.15s',
+            }}>
+              <ImagePlus size={14} /> Images
+            </button>
           </div>
 
           {/* Right actions */}
@@ -170,6 +193,13 @@ function App() {
               padding: '10px 0', fontSize: 15, fontWeight: 500, color: '#475569',
             }}>
               Contact
+            </button>
+            <button onClick={() => { setMobileMenuOpen(false); setPage('image-analysis'); window.scrollTo(0, 0); }} style={{
+              display: 'flex', alignItems: 'center', gap: 8, width: '100%', textAlign: 'left',
+              background: 'none', border: 'none', cursor: 'pointer',
+              padding: '10px 0', fontSize: 15, fontWeight: 600, color: '#7c3aed',
+            }}>
+              <ImagePlus size={15} /> Image Analysis
             </button>
           </div>
         )}

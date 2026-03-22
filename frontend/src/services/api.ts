@@ -1,6 +1,8 @@
 import type {
   AnalysisResult,
   BurnSubtitlesResponse,
+  ImageAnalysisResult,
+  ImageJobStatus,
   JobStatusResponse,
   UploadVideoResponse,
   ViralScore,
@@ -93,5 +95,23 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId, paymentId, orderId, signature, plan }),
     });
+  },
+
+  // ── Image Growth Engine ──────────────────────────────────────────────────────
+
+  analyzeImages(files: File[], tone: string, caption?: string): Promise<{ jobId: string; status: string }> {
+    const form = new FormData();
+    files.forEach(f => form.append('images', f));
+    form.append('tone', tone);
+    if (caption) form.append('caption', caption);
+    return request('/image/analyze', { method: 'POST', body: form });
+  },
+
+  getImageStatus(jobId: string): Promise<ImageJobStatus> {
+    return request<ImageJobStatus>(`/image/${jobId}/status`);
+  },
+
+  getImageResult(jobId: string): Promise<ImageAnalysisResult> {
+    return request<ImageAnalysisResult>(`/image/${jobId}/result`);
   },
 };

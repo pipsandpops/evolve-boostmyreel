@@ -62,3 +62,90 @@ export interface BurnSubtitlesResponse {
   jobId: string;
   burnedVideoUrl: string;
 }
+
+// ── Image Growth Engine ────────────────────────────────────────────────────────
+
+export interface VisualFeatures {
+  width: number;
+  height: number;
+  aspectRatio: string;
+  brightness: number;
+  contrast: number;
+  sharpness: number;
+  visualClutterScore: number;
+  dominantColors: string[];
+  colorTemperature: string;
+  isHighContrast: boolean;
+  isWellLit: boolean;
+  isSharp: boolean;
+  isVertical: boolean;
+}
+
+export interface SemanticAnalysis {
+  hasFace: boolean;
+  faceCount: number;
+  hasTextOverlay: boolean;
+  textContent: string | null;
+  dominantObjects: string[];
+  sceneType: string;
+  mood: string;
+  qualityIssues: string[];
+  engagementBoosters: string[];
+  engagementKillers: string[];
+  claudePostScore: number;
+}
+
+export interface EngagementPrediction {
+  postScore: number;
+  likesPrediction: string;
+  saveProbability: string;
+  shareProbability: string;
+  confidence: string;
+  estimatedReach: string;
+  scoreBreakdown: Record<string, number>;
+}
+
+export interface CaptionSuggestion {
+  hook: string;
+  fullCaption: string;
+  cta: string;
+  hashtags: string[];
+  tone: string;
+}
+
+export interface SlideAnalysis {
+  slideIndex: number;
+  postScore: number;
+  visual: VisualFeatures;
+  semantic: SemanticAnalysis;
+  engagement: EngagementPrediction;
+  insights: string[];
+  isWeakSlide: boolean;
+  improvementSuggestion: string | null;
+}
+
+export interface ImageAnalysisResult {
+  type: 'image' | 'carousel';
+  postScore: number;
+  hasFace: boolean;
+  hasTextOverlay: boolean;
+  insights: string[];
+  missingElements: string[];
+  engagement: EngagementPrediction;
+  primaryVisualFeatures: VisualFeatures | null;
+  caption: CaptionSuggestion;
+  slideBreakdown: SlideAnalysis[];
+  bestSlideIndex: number | null;
+  carouselFlowSuggestions: string[];
+  suggestedSlideOrder: number[] | null;
+  coverRecommendation: string | null;
+  isPremiumResult: boolean;
+}
+
+export interface ImageJobStatus {
+  jobId: string;
+  status: 'Pending' | 'Analyzing' | 'GeneratingCaptions' | 'Complete' | 'Failed';
+  progressPercent: number;
+  message: string | null;
+  createdAt: string;
+}
