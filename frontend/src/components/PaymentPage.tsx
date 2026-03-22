@@ -59,7 +59,6 @@ export function PaymentPage({ plan, userId, onBack, onSuccess }: PaymentPageProp
         order_id: order.orderId,
         prefill: { name, email },
         theme: { color: '#6366f1' },
-        method: { card: true, upi: true, netbanking: true, wallet: true },
         handler: async (response: {
           razorpay_payment_id: string;
           razorpay_order_id: string;
