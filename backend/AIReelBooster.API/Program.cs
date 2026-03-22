@@ -1,4 +1,8 @@
 using AIReelBooster.API.Configuration;
+using AIReelBooster.API.ImageGrowthEngine.Infrastructure;
+using AIReelBooster.API.ImageGrowthEngine.Interfaces;
+using AIReelBooster.API.ImageGrowthEngine.Services;
+using AIReelBooster.API.ImageGrowthEngine.Workers;
 using AIReelBooster.API.Infrastructure;
 using AIReelBooster.API.Middleware;
 using AIReelBooster.API.Services;
@@ -52,6 +56,16 @@ builder.Services.AddHttpClient<IAIGenerationService, ClaudeAIGenerationService>(
 // Background workers
 builder.Services.AddHostedService<VideoProcessingWorker>();
 builder.Services.AddHostedService<JobCleanupWorker>();
+
+// ── ImageGrowthEngine ─────────────────────────────────────────────────────────
+builder.Services.AddSingleton<ImageJobStore>();
+builder.Services.AddSingleton<ImageProcessingQueue>();
+builder.Services.AddScoped<IVisualFeatureExtractor, VisualFeatureExtractor>();
+builder.Services.AddScoped<IEngagementPredictor, EngagementPredictor>();
+builder.Services.AddHttpClient<IImageAnalyzerService, ClaudeImageAnalyzerService>();
+builder.Services.AddHttpClient<ICaptionGeneratorService, ClaudeCaptionGeneratorService>();
+builder.Services.AddHttpClient<ICarouselOptimizer, CarouselOptimizer>();
+builder.Services.AddHostedService<ImageProcessingWorker>();
 
 // Increase default multipart size limits
 builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(opts =>
