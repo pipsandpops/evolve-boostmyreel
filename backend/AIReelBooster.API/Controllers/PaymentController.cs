@@ -49,12 +49,13 @@ public class PaymentController : ControllerBase
     [HttpPost("create-order")]
     public async Task<IActionResult> CreateOrder([FromBody] CreateOrderRequest req)
     {
-        // Amount in paise (₹ × 100)
+        // Amount in paise (₹ × 100), GST-inclusive to match what the frontend shows.
+        // Frontend adds 18% GST: starter ₹49+₹9=₹58, creator ₹199+₹36=₹235, pro ₹499+₹90=₹589
         var amount = req.Plan switch
         {
-            "starter" => 4900,
-            "creator" => 19900,
-            "pro"     => 49900,
+            "starter" => 5800,   // ₹49 + ₹9 GST  = ₹58
+            "creator" => 23500,  // ₹199 + ₹36 GST = ₹235
+            "pro"     => 58900,  // ₹499 + ₹90 GST = ₹589
             _         => 0
         };
 
