@@ -1,3 +1,7 @@
+using AIReelBooster.API.AutoReelGenerator.Infrastructure;
+using AIReelBooster.API.AutoReelGenerator.Interfaces;
+using AIReelBooster.API.AutoReelGenerator.Services;
+using AIReelBooster.API.AutoReelGenerator.Workers;
 using AIReelBooster.API.Configuration;
 using AIReelBooster.API.ImageGrowthEngine.Infrastructure;
 using AIReelBooster.API.ImageGrowthEngine.Interfaces;
@@ -64,6 +68,15 @@ builder.Services.AddScoped<IScenarioPredictionService, ScenarioPredictionService
 builder.Services.AddScoped<IInstagramAuthService,          InstagramAuthService>();
 builder.Services.AddScoped<IPersonalizedPredictionService, PersonalizedPredictionService>();
 builder.Services.AddHttpClient<IInstagramAnalyticsService, InstagramAnalyticsService>();
+
+// ── Auto Reel Generator ───────────────────────────────────────────────────────
+builder.Services.AddSingleton<ReelJobStore>();
+builder.Services.AddSingleton<ReelProcessingQueue>();
+builder.Services.AddScoped<ISceneDetectionService, SceneDetectionService>();
+builder.Services.AddScoped<ISegmentRankingService, SegmentRankingService>();
+builder.Services.AddScoped<IReelVideoProcessor, ReelVideoProcessor>();
+builder.Services.AddScoped<IAutoReelService, AutoReelService>();
+builder.Services.AddHostedService<ReelGenerationWorker>();
 
 // ── ImageGrowthEngine ─────────────────────────────────────────────────────────
 builder.Services.AddSingleton<ImageJobStore>();

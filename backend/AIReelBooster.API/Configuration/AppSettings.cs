@@ -10,6 +10,45 @@ public class AppSettings
     public PredictionSettings    Prediction           { get; set; } = new();
     public FollowerTierSettings  FollowerTiers        { get; set; } = new();
     public InstagramSettings     Instagram            { get; set; } = new();
+    public AutoReelSettings      AutoReel             { get; set; } = new();
+}
+
+// ── Auto Reel Generator ───────────────────────────────────────────────────────
+
+public class AutoReelSettings
+{
+    /// <summary>Maximum number of reels to generate per run.</summary>
+    public int    MaxReels                  { get; set; } = 5;
+
+    /// <summary>Minimum clip length in seconds to be eligible.</summary>
+    public double MinSegmentSeconds         { get; set; } = 5.0;
+
+    /// <summary>Maximum clip length in seconds to be eligible.</summary>
+    public double MaxSegmentSeconds         { get; set; } = 30.0;
+
+    /// <summary>FFmpeg scene-change detection threshold (0.0–1.0). Higher = fewer, bigger changes.</summary>
+    public double SceneDetectionThreshold   { get; set; } = 0.35;
+
+    /// <summary>Output reel width (portrait).</summary>
+    public int    OutputWidth               { get; set; } = 720;
+
+    /// <summary>Output reel height (portrait).</summary>
+    public int    OutputHeight              { get; set; } = 1280;
+
+    /// <summary>Apply subtle zoom-pan effect to each reel.</summary>
+    public bool   EnableZoom               { get; set; } = true;
+
+    /// <summary>Burn subtitles onto reels when an SRT file is available.</summary>
+    public bool   EnableSubtitles          { get; set; } = true;
+
+    /// <summary>Use Claude AI to generate engaging reel titles.</summary>
+    public bool   EnableAiTitles           { get; set; } = true;
+
+    /// <summary>H.264 CRF quality for output reels (18 = near-lossless, 28 = smaller file).</summary>
+    public int    OutputCrf                { get; set; } = 23;
+
+    /// <summary>FFmpeg preset for encoding speed vs compression. Options: ultrafast/fast/medium.</summary>
+    public string OutputPreset             { get; set; } = "fast";
 }
 
 public class RazorpaySettings
