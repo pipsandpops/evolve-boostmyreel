@@ -12,11 +12,10 @@ import type {
   ViewPrediction,
 } from '../types';
 
-// In dev the Vite proxy rewrites /api → localhost:5000.
-// In production set VITE_API_URL=https://your-backend.railway.app
-const BASE = import.meta.env.VITE_API_URL
-  ? `${import.meta.env.VITE_API_URL}/api`
-  : '/api';
+// In dev: Vite proxy rewrites /api → localhost:5000 (see vite.config.ts).
+// In production: Vercel rewrites /api/* → Railway (see vercel.json).
+// VITE_API_URL is no longer needed; all requests use the same-origin /api path.
+const BASE = '/api';
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${url}`, init);
