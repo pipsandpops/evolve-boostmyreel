@@ -57,6 +57,7 @@ public class ReelVideoProcessor : IReelVideoProcessor
                  + $"-t {duration.TotalSeconds.ToString("F3", System.Globalization.CultureInfo.InvariantCulture)} "
                  + $"-c:v libx264 -preset {_settings.OutputPreset} -crf {_settings.OutputCrf} "
                  + "-c:a aac -b:a 128k "
+                 + "-threads 2 "
                  + $"\"{outputPath}\"";
 
         _logger.LogDebug("ExtractClip: {Args}", args);
@@ -114,6 +115,7 @@ public class ReelVideoProcessor : IReelVideoProcessor
                  + $"-vf \"{videoFilter}\" "
                  + $"-c:v libx264 -preset {_settings.OutputPreset} -crf {_settings.OutputCrf} "
                  + "-c:a aac -b:a 128k "
+                 + "-threads 2 "
                  + $"-r 30 \"{outputPath}\"";
 
         _logger.LogDebug("ConvertToVertical: {Args}", args);
