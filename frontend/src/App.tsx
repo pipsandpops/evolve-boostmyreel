@@ -92,7 +92,7 @@ function App() {
         isPaidUser={isPaidUser}
         userId={userId}
         onBack={() => { setPage('home'); window.scrollTo(0, 0); }}
-        onUpgrade={() => { setPage('payment'); setSelectedPlan(null); setTimeout(() => scrollTo('pricing'), 100); }}
+        onUpgrade={() => { setPage('home'); setSelectedPlan(null); setTimeout(() => scrollTo('pricing'), 150); }}
       />
     );
   }
