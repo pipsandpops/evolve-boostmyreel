@@ -27,11 +27,64 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+/**
+ * Upload a file using XMLHttpRequest so we can track real byte-level progress.
+ * `onProgress` receives 0–100 as bytes are sent over the wire.
+ * Pass an AbortSignal to cancel mid-upload.
+ */
+function uploadWithProgress<T>(
+  url: string,
+  form: FormData,
+  onProgress: (pct: number) => void,
+  signal?: AbortSignal,
+): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+
+    // Wire up abort signal
+    const abort = () => xhr.abort();
+    signal?.addEventListener('abort', abort);
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+    };
+
+    xhr.onload = () => {
+      signal?.removeEventListener('abort', abort);
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try { resolve(JSON.parse(xhr.responseText)); }
+        catch { reject(new Error('Invalid server response.')); }
+      } else {
+        let msg = `HTTP ${xhr.status}`;
+        try { msg = JSON.parse(xhr.responseText)?.error ?? msg; } catch { /* use default */ }
+        reject(new Error(msg));
+      }
+    };
+
+    xhr.onerror = () => {
+      signal?.removeEventListener('abort', abort);
+      reject(new Error('Network error — check your connection and try again.'));
+    };
+
+    xhr.onabort = () => {
+      signal?.removeEventListener('abort', abort);
+      reject(new DOMException('Upload cancelled.', 'AbortError'));
+    };
+
+    xhr.open('POST', `${BASE}${url}`);
+    xhr.send(form);
+  });
+}
+
 export const api = {
-  uploadVideo(file: File): Promise<UploadVideoResponse> {
+  uploadVideo(
+    file: File,
+    onProgress: (pct: number) => void = () => {},
+    signal?: AbortSignal,
+  ): Promise<UploadVideoResponse> {
     const form = new FormData();
     form.append('file', file);
-    return request<UploadVideoResponse>('/video/upload', { method: 'POST', body: form });
+    return uploadWithProgress<UploadVideoResponse>('/video/upload', form, onProgress, signal);
   },
 
   getStatus(jobId: string): Promise<JobStatusResponse> {

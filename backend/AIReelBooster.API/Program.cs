@@ -94,6 +94,15 @@ builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(opts 
     opts.MultipartBodyLengthLimit = 600_000_000;
 });
 
+// Allow arbitrarily slow uploads (mobile data) by removing Kestrel's minimum
+// body data-rate enforcement. Without this, Kestrel aborts connections that
+// send data slower than the default 240 bytes/sec threshold.
+builder.WebHost.ConfigureKestrel(k =>
+{
+    k.Limits.MinRequestBodyDataRate = null;
+    k.Limits.MaxRequestBodySize    = 600_000_000;
+});
+
 var app = builder.Build();
 
 // Ensure SQLite DB + tables exist

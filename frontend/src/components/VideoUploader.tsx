@@ -11,12 +11,15 @@ const ACCEPTED_TYPES = {
 };
 const MAX_SIZE = 500 * 1024 * 1024;
 
+const MOBILE_WARN_BYTES = 100 * 1024 * 1024; // 100 MB
+
 interface VideoUploaderProps {
   onUpload: (file: File) => void;
   isUploading: boolean;
+  uploadPercent?: number;
 }
 
-export function VideoUploader({ onUpload, isUploading }: VideoUploaderProps) {
+export function VideoUploader({ onUpload, isUploading, uploadPercent = 0 }: VideoUploaderProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [dropError, setDropError] = useState<string | null>(null);
 
@@ -41,6 +44,7 @@ export function VideoUploader({ onUpload, isUploading }: VideoUploaderProps) {
   const formatSize = (bytes: number) => `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 
   if (isUploading) {
+    const pct = Math.max(1, uploadPercent); // show at least 1% so bar is visible
     return (
       <div style={{
         border: '2px solid #e2e8f0', borderRadius: 20,
@@ -54,26 +58,26 @@ export function VideoUploader({ onUpload, isUploading }: VideoUploaderProps) {
         }}>
           <Film size={24} color="white" />
         </div>
-        <p style={{ fontWeight: 600, color: '#0f172a', margin: '0 0 6px', fontSize: 15 }}>
-          Uploading your video…
+        <p style={{ fontWeight: 600, color: '#0f172a', margin: '0 0 4px', fontSize: 15 }}>
+          Uploading your video… {pct}%
         </p>
-        <p style={{ color: '#94a3b8', fontSize: 13, margin: 0 }}>
+        <p style={{ color: '#94a3b8', fontSize: 13, margin: '0 0 16px' }}>
           {selectedFile?.name}
+          {selectedFile && selectedFile.size > MOBILE_WARN_BYTES && (
+            <span style={{ display: 'block', marginTop: 4, color: '#f59e0b', fontSize: 12 }}>
+              Large file — stay connected, this may take a few minutes on mobile data
+            </span>
+          )}
         </p>
-        <div style={{ marginTop: 20, height: 4, borderRadius: 99, background: '#e2e8f0', overflow: 'hidden' }}>
+        {/* Real progress bar driven by XHR bytes-sent */}
+        <div style={{ height: 6, borderRadius: 99, background: '#e2e8f0', overflow: 'hidden' }}>
           <div style={{
-            height: '100%', borderRadius: 99, width: '60%',
-            background: 'linear-gradient(135deg, #4f46e5, #db2777)',
-            animation: 'indeterminate 1.4s ease infinite',
+            height: '100%', borderRadius: 99,
+            width: `${pct}%`,
+            background: 'linear-gradient(90deg, #4f46e5, #7c3aed, #db2777)',
+            transition: 'width 0.3s ease',
           }} />
         </div>
-        <style>{`
-          @keyframes indeterminate {
-            0% { transform: translateX(-100%); width: 60%; }
-            50% { width: 80%; }
-            100% { transform: translateX(200%); width: 60%; }
-          }
-        `}</style>
       </div>
     );
   }
@@ -161,22 +165,29 @@ export function VideoUploader({ onUpload, isUploading }: VideoUploaderProps) {
             </div>
 
             {/* Actions */}
-            <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-              <button
-                onClick={() => setSelectedFile(null)}
-                className="btn-secondary"
-                style={{ padding: '8px 10px', borderRadius: 10 }}
-              >
-                <X size={14} />
-              </button>
-              <button
-                onClick={() => onUpload(selectedFile)}
-                className="btn-primary"
-                style={{ padding: '9px 22px', fontSize: 14 }}
-              >
-                Boost It
-                <ArrowRight size={15} />
-              </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0, alignItems: 'flex-end' }}>
+              {selectedFile.size > MOBILE_WARN_BYTES && (
+                <p style={{ fontSize: 11, color: '#f59e0b', margin: 0, textAlign: 'right', maxWidth: 160 }}>
+                  ⚠ Large file — use Wi-Fi for best results
+                </p>
+              )}
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  onClick={() => setSelectedFile(null)}
+                  className="btn-secondary"
+                  style={{ padding: '8px 10px', borderRadius: 10 }}
+                >
+                  <X size={14} />
+                </button>
+                <button
+                  onClick={() => onUpload(selectedFile)}
+                  className="btn-primary"
+                  style={{ padding: '9px 22px', fontSize: 14 }}
+                >
+                  Boost It
+                  <ArrowRight size={15} />
+                </button>
+              </div>
             </div>
           </div>
         )}

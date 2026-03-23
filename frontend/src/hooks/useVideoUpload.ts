@@ -9,6 +9,8 @@ interface UseVideoUploadResult {
   jobId: string | null;
   jobStatus: JobStatus | null;
   progressPercent: number;
+  /** 0–100 byte-level upload progress (only meaningful while state === 'uploading') */
+  uploadPercent: number;
   result: AnalysisResult | null;
   error: string | null;
   upload: (file: File) => Promise<void>;
@@ -20,9 +22,11 @@ export function useVideoUpload(): UseVideoUploadResult {
   const [jobId, setJobId] = useState<string | null>(null);
   const [jobStatus, setJobStatus] = useState<JobStatus | null>(null);
   const [progressPercent, setProgressPercent] = useState(0);
+  const [uploadPercent, setUploadPercent] = useState(0);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   const stopPolling = () => {
     if (pollingRef.current) {
@@ -61,32 +65,50 @@ export function useVideoUpload(): UseVideoUploadResult {
   }, []);
 
   const upload = useCallback(async (file: File) => {
+    // Cancel any in-flight upload from a previous attempt
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setState('uploading');
     setError(null);
     setResult(null);
-    setProgressPercent(5);
+    setUploadPercent(0);
+    setProgressPercent(0);
 
     try {
-      const res = await api.uploadVideo(file);
+      const res = await api.uploadVideo(
+        file,
+        (pct) => setUploadPercent(pct),
+        controller.signal,
+      );
+      setUploadPercent(100);
       setJobId(res.jobId);
       startPolling(res.jobId);
     } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') return; // user reset
       setState('error');
       setError(err instanceof Error ? err.message : 'Upload failed.');
     }
   }, [startPolling]);
 
   const reset = useCallback(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
     stopPolling();
     setState('idle');
     setJobId(null);
     setJobStatus(null);
     setProgressPercent(0);
+    setUploadPercent(0);
     setResult(null);
     setError(null);
   }, []);
 
-  useEffect(() => () => stopPolling(), []);
+  useEffect(() => () => {
+    abortRef.current?.abort();
+    stopPolling();
+  }, []);
 
-  return { state, jobId, jobStatus, progressPercent, result, error, upload, reset };
+  return { state, jobId, jobStatus, progressPercent, uploadPercent, result, error, upload, reset };
 }

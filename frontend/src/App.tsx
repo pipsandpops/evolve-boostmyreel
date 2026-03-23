@@ -17,7 +17,7 @@ import { Sparkles, RotateCcw, Zap, FileText, Hash, Captions, Menu, X, ImagePlus,
 type Page = 'home' | 'payment' | 'contact' | 'image-analysis' | 'auto-reel';
 
 function App() {
-  const { state, jobId, jobStatus, progressPercent, result, error, upload, reset } = useVideoUpload();
+  const { state, jobId, jobStatus, progressPercent, uploadPercent, result, error, upload, reset } = useVideoUpload();
   const isIdle = state === 'idle';
   const isWorking = state === 'uploading' || state === 'polling';
 
@@ -325,7 +325,7 @@ function App() {
                 </>
               )}
 
-              <VideoUploader onUpload={upload} isUploading={state === 'uploading'} />
+              <VideoUploader onUpload={upload} isUploading={state === 'uploading'} uploadPercent={uploadPercent} />
 
               {isWorking && (
                 <div style={{ marginTop: 24 }}>
