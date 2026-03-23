@@ -11,9 +11,10 @@ import { AboutSection } from './components/AboutSection';
 import { PaymentPage } from './components/PaymentPage';
 import { ContactPage } from './components/ContactPage';
 import { ImageAnalysisPage } from './components/image/ImageAnalysisPage';
-import { Sparkles, RotateCcw, Zap, FileText, Hash, Captions, Menu, X, ImagePlus } from 'lucide-react';
+import { AutoReelPage } from './components/autoreels/AutoReelPage';
+import { Sparkles, RotateCcw, Zap, FileText, Hash, Captions, Menu, X, ImagePlus, Clapperboard } from 'lucide-react';
 
-type Page = 'home' | 'payment' | 'contact' | 'image-analysis';
+type Page = 'home' | 'payment' | 'contact' | 'image-analysis' | 'auto-reel';
 
 function App() {
   const { state, jobId, jobStatus, progressPercent, result, error, upload, reset } = useVideoUpload();
@@ -78,6 +79,18 @@ function App() {
     return (
       <ImageAnalysisPage
         isPaidUser={isPaidUser}
+        onBack={() => { setPage('home'); window.scrollTo(0, 0); }}
+        onUpgrade={() => { setPage('payment'); setSelectedPlan(null); setTimeout(() => scrollTo('pricing'), 100); }}
+      />
+    );
+  }
+
+  // ── Auto Reel Generator page ───────────────────────────────────────
+  if (page === 'auto-reel') {
+    return (
+      <AutoReelPage
+        isPaidUser={isPaidUser}
+        userId={userId}
         onBack={() => { setPage('home'); window.scrollTo(0, 0); }}
         onUpgrade={() => { setPage('payment'); setSelectedPlan(null); setTimeout(() => scrollTo('pricing'), 100); }}
       />
@@ -185,6 +198,17 @@ function App() {
             }}>
               <ImagePlus size={14} /> Images
             </button>
+            {/* Auto Reel Generator CTA */}
+            <button onClick={() => { setPage('auto-reel'); window.scrollTo(0, 0); }} style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              background: 'linear-gradient(135deg, #4f46e510, #db277710)',
+              border: '1px solid #fda4af', cursor: 'pointer',
+              padding: '6px 14px', borderRadius: 8,
+              fontSize: 14, fontWeight: 600, color: '#db2777',
+              transition: 'all 0.15s',
+            }}>
+              <Clapperboard size={14} /> Auto Reels
+            </button>
           </div>
 
           {/* Right actions */}
@@ -242,6 +266,13 @@ function App() {
               padding: '10px 0', fontSize: 15, fontWeight: 600, color: '#7c3aed',
             }}>
               <ImagePlus size={15} /> Image Analysis
+            </button>
+            <button onClick={() => { setMobileMenuOpen(false); setPage('auto-reel'); window.scrollTo(0, 0); }} style={{
+              display: 'flex', alignItems: 'center', gap: 8, width: '100%', textAlign: 'left',
+              background: 'none', border: 'none', cursor: 'pointer',
+              padding: '10px 0', fontSize: 15, fontWeight: 600, color: '#db2777',
+            }}>
+              <Clapperboard size={15} /> Auto Reel Generator
             </button>
           </div>
         )}

@@ -184,3 +184,45 @@ export interface ImageJobStatus {
   message: string | null;
   createdAt: string;
 }
+
+// ── Auto Reel Generator ────────────────────────────────────────────────────────
+
+export type ReelJobStatus =
+  | 'Pending'
+  | 'Detecting'
+  | 'Ranking'
+  | 'Extracting'
+  | 'Processing'
+  | 'Complete'
+  | 'Failed';
+
+export interface GeneratedReel {
+  index: number;
+  title: string;
+  startFormatted: string;
+  endFormatted: string;
+  downloadUrl: string;
+  motionScore: number;
+  engagementScore: number;
+  transcriptSnippet: string | null;
+  fileSizeBytes: number;
+}
+
+export interface ReelJobStatusResponse {
+  reelJobId: string;
+  status: ReelJobStatus;
+  progressPercent: number;
+  currentStep: string | null;
+  errorMessage: string | null;
+  reelCount: number;
+  createdAt: string;
+  completedAt: string | null;
+}
+
+export interface ReelResult {
+  reelJobId: string;
+  sourceJobId: string;
+  reelCount: number;
+  completedAt: string;
+  reels: GeneratedReel[];
+}
