@@ -206,6 +206,8 @@ export interface GeneratedReel {
   engagementScore: number;
   transcriptSnippet: string | null;
   fileSizeBytes: number;
+  locked: boolean;
+  watermarked: boolean;
 }
 
 export interface ReelJobStatusResponse {
@@ -224,5 +226,7 @@ export interface ReelResult {
   sourceJobId: string;
   reelCount: number;
   completedAt: string;
+  isPremium: boolean;
+  unlockedCount: number;
   reels: GeneratedReel[];
 }

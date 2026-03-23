@@ -11,9 +11,29 @@ public class AppSettings
     public FollowerTierSettings  FollowerTiers        { get; set; } = new();
     public InstagramSettings     Instagram            { get; set; } = new();
     public AutoReelSettings      AutoReel             { get; set; } = new();
+    public ReelPlanLimits        ReelPlanLimits       { get; set; } = new();
 }
 
 // ── Auto Reel Generator ───────────────────────────────────────────────────────
+
+/// <summary>
+/// How many reels each billing plan can unlock.
+/// The backend always generates MaxReels clips; this controls access.
+/// </summary>
+public class ReelPlanLimits
+{
+    /// <summary>Free users can download this many reels (rest are locked).</summary>
+    public int Free    { get; set; } = 1;
+
+    /// <summary>Starter plan (₹49 one-time).</summary>
+    public int Starter { get; set; } = 3;
+
+    /// <summary>Creator plan (₹199/month).</summary>
+    public int Creator { get; set; } = 5;
+
+    /// <summary>Pro plan (₹499/month).</summary>
+    public int Pro     { get; set; } = 5;
+}
 
 public class AutoReelSettings
 {

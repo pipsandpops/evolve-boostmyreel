@@ -17,6 +17,8 @@ interface UseAutoReelResult {
   reelJobStatus: ReelJobStatus | null;
   reels: GeneratedReel[];
   reelJobId: string | null;
+  isPremium: boolean;
+  unlockedCount: number;
   error: string | null;
   start: (file: File, userId: string | null) => Promise<void>;
   reset: () => void;
@@ -29,6 +31,8 @@ export function useAutoReel(): UseAutoReelResult {
   const [reelJobStatus, setReelStatus]  = useState<ReelJobStatus | null>(null);
   const [reels, setReels]               = useState<GeneratedReel[]>([]);
   const [reelJobId, setReelJobId]       = useState<string | null>(null);
+  const [isPremium, setIsPremium]       = useState(false);
+  const [unlockedCount, setUnlocked]    = useState(0);
   const [error, setError]               = useState<string | null>(null);
 
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -134,6 +138,8 @@ export function useAutoReel(): UseAutoReelResult {
       // 5. Fetch results
       const result = await api.getReelResult(rid);
       setReels(result.reels);
+      setIsPremium(result.isPremium);
+      setUnlocked(result.unlockedCount);
       setState('complete');
       setProgress(100);
       setStep(null);
@@ -152,10 +158,12 @@ export function useAutoReel(): UseAutoReelResult {
     setReels([]);
     setReelJobId(null);
     setReelStatus(null);
+    setIsPremium(false);
+    setUnlocked(0);
     setError(null);
   }, []);
 
   useEffect(() => () => stopPolling(), []);
 
-  return { state, progressPercent, currentStep, reelJobStatus, reels, reelJobId, error, start, reset };
+  return { state, progressPercent, currentStep, reelJobStatus, reels, reelJobId, isPremium, unlockedCount, error, start, reset };
 }

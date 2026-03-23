@@ -308,8 +308,8 @@ interface Props {
   onUpgrade: () => void;
 }
 
-export function AutoReelPage({ isPaidUser, userId, onBack, onUpgrade }: Props) {
-  const { state, progressPercent, currentStep, reelJobStatus, reels, reelJobId, error, start, reset } = useAutoReel();
+export function AutoReelPage({ userId, onBack, onUpgrade }: Props) {
+  const { state, progressPercent, currentStep, reelJobStatus, reels, reelJobId, isPremium, error, start, reset } = useAutoReel();
   const [selectedReel, setSelectedReel] = useState<number | null>(null);
 
   const isIdle       = state === 'idle';
@@ -317,8 +317,7 @@ export function AutoReelPage({ isPaidUser, userId, onBack, onUpgrade }: Props) {
   const isComplete   = state === 'complete';
   const isFailed     = state === 'failed';
 
-  // Free users can access 1 reel; paid users get all
-  const unlockedCount = isPaidUser ? reels.length : 1;
+  const lockedCount  = reels.filter(r => r.locked).length;
 
   // Best reel = index 0 (already ranked by backend, highest score first)
   const bestIndex = 0;
@@ -494,7 +493,7 @@ export function AutoReelPage({ isPaidUser, userId, onBack, onUpgrade }: Props) {
                         reel={reel}
                         reelJobId={reelJobId}
                         isBest={i === bestIndex}
-                        isLocked={i >= unlockedCount}
+                        isLocked={reel.locked}
                         onUpgrade={onUpgrade}
                       />
                     </div>
@@ -502,7 +501,7 @@ export function AutoReelPage({ isPaidUser, userId, onBack, onUpgrade }: Props) {
                 </div>
 
                 {/* Free user upgrade nudge */}
-                {!isPaidUser && reels.length > 1 && (
+                {!isPremium && lockedCount > 0 && (
                   <div style={{
                     marginTop: 20,
                     background: 'linear-gradient(135deg, #1e1b4b, #312e81)',
@@ -519,7 +518,7 @@ export function AutoReelPage({ isPaidUser, userId, onBack, onUpgrade }: Props) {
                     </div>
                     <div style={{ flex: 1, minWidth: 180 }}>
                       <p style={{ fontSize: 15, fontWeight: 700, color: 'white', margin: '0 0 2px' }}>
-                        {reels.length - 1} more reel{reels.length - 1 > 1 ? 's' : ''} waiting for you
+                        Unlock {lockedCount} more reel{lockedCount > 1 ? 's' : ''}
                       </p>
                       <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', margin: 0 }}>
                         Upgrade to Pro to unlock all reels + HD export
