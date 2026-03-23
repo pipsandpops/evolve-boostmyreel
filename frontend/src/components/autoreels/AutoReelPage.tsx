@@ -5,8 +5,7 @@ import { useAutoReel, type AutoReelState } from '../../hooks/useAutoReel';
 import { ReelCard } from './ReelCard';
 
 const ACCEPTED = {
-  'video/mp4': ['.mp4'],
-  'video/quicktime': ['.mov'],
+  'video/*': ['.mp4', '.mov', '.webm', '.avi', '.mkv'],
 };
 const MAX_SIZE = 500 * 1024 * 1024;
 

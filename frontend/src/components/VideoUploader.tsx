@@ -2,12 +2,11 @@ import { useCallback, useState } from 'react';
 import { useDropzone, type FileRejection } from 'react-dropzone';
 import { Upload, Film, X, ArrowRight } from 'lucide-react';
 
+// Accept any video MIME type — Android/iOS devices often send non-standard
+// types (e.g. application/octet-stream). Extension validation happens on
+// the server; the browser only needs to open the file picker correctly.
 const ACCEPTED_TYPES = {
-  'video/mp4': ['.mp4'],
-  'video/quicktime': ['.mov'],
-  'video/webm': ['.webm'],
-  'video/x-msvideo': ['.avi'],
-  'video/x-matroska': ['.mkv'],
+  'video/*': ['.mp4', '.mov', '.webm', '.avi', '.mkv'],
 };
 const MAX_SIZE = 500 * 1024 * 1024;
 

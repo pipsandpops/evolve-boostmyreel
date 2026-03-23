@@ -27,6 +27,9 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+// Each chunk is 4 MB — well under Railway's ~100 s proxy timeout even on slow mobile data.
+const CHUNK_SIZE = 4 * 1024 * 1024;
+
 /**
  * Upload a file using XMLHttpRequest so we can track real byte-level progress.
  * `onProgress` receives 0–100 as bytes are sent over the wire.
@@ -76,15 +79,56 @@ function uploadWithProgress<T>(
   });
 }
 
+/**
+ * Splits `file` into CHUNK_SIZE slices and uploads each one to /video/chunk,
+ * then calls /video/finalize to assemble them server-side.
+ * This bypasses Railway's ~100 s proxy timeout on slow mobile connections.
+ */
+async function uploadInChunks(
+  file: File,
+  onProgress: (pct: number) => void,
+  signal?: AbortSignal,
+): Promise<UploadVideoResponse> {
+  const uploadId    = crypto.randomUUID();
+  const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+
+  for (let i = 0; i < totalChunks; i++) {
+    if (signal?.aborted) throw new DOMException('Upload cancelled.', 'AbortError');
+
+    const form = new FormData();
+    form.append('uploadId', uploadId);
+    form.append('chunkIndex', String(i));
+    form.append('totalChunks', String(totalChunks));
+    form.append('chunk', file.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE), file.name);
+
+    await uploadWithProgress<unknown>(
+      '/video/chunk',
+      form,
+      (pct) => onProgress(Math.round(((i + pct / 100) / totalChunks) * 95)),
+      signal,
+    );
+  }
+
+  onProgress(97);
+
+  const result = await request<UploadVideoResponse>('/video/finalize', {
+    signal,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ uploadId, totalChunks, fileName: file.name }),
+  });
+
+  onProgress(100);
+  return result;
+}
+
 export const api = {
   uploadVideo(
     file: File,
     onProgress: (pct: number) => void = () => {},
     signal?: AbortSignal,
   ): Promise<UploadVideoResponse> {
-    const form = new FormData();
-    form.append('file', file);
-    return uploadWithProgress<UploadVideoResponse>('/video/upload', form, onProgress, signal);
+    return uploadInChunks(file, onProgress, signal);
   },
 
   getStatus(jobId: string): Promise<JobStatusResponse> {

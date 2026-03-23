@@ -18,6 +18,7 @@ public class VideoController : ControllerBase
     private readonly BackgroundProcessingQueue _queue;
     private readonly IVideoStorageService _storage;
     private readonly long _maxFileSize;
+    private readonly string _tempPath;
     private readonly ILogger<VideoController> _logger;
 
     public VideoController(
@@ -27,11 +28,12 @@ public class VideoController : ControllerBase
         IOptions<AppSettings> options,
         ILogger<VideoController> logger)
     {
-        _jobStore = jobStore;
-        _queue = queue;
-        _storage = storage;
+        _jobStore  = jobStore;
+        _queue     = queue;
+        _storage   = storage;
         _maxFileSize = options.Value.Storage.MaxFileSizeBytes;
-        _logger = logger;
+        _tempPath  = Path.GetFullPath(options.Value.Storage.TempPath);
+        _logger    = logger;
     }
 
     [HttpPost("upload")]
@@ -74,6 +76,104 @@ public class VideoController : ControllerBase
         }
     }
 
+    // ── Chunked upload ────────────────────────────────────────────────────────
+    //
+    // Mobile clients split large files into 4 MB slices and POST each slice
+    // here.  Once all slices arrive, POST /finalize assembles them into a job.
+    // This sidesteps Railway's ~100 s proxy timeout on slow connections.
+
+    [HttpPost("chunk")]
+    [RequestSizeLimit(6_000_000)]
+    [RequestFormLimits(MultipartBodyLengthLimit = 6_000_000)]
+    public async Task<IActionResult> UploadChunk(
+        [FromForm] string uploadId,
+        [FromForm] int chunkIndex,
+        [FromForm] int totalChunks,
+        IFormFile chunk,
+        CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(uploadId) || chunk == null || chunk.Length == 0)
+            return BadRequest(new { error = "uploadId and chunk are required." });
+
+        // Reject uploadIds that could escape the chunk directory
+        if (uploadId.Any(c => !char.IsLetterOrDigit(c) && c != '-'))
+            return BadRequest(new { error = "Invalid uploadId." });
+
+        if (chunkIndex < 0 || totalChunks < 1 || chunkIndex >= totalChunks)
+            return BadRequest(new { error = "Invalid chunk index or totalChunks." });
+
+        var chunkDir = Path.Combine(_tempPath, "_chunks", uploadId);
+        Directory.CreateDirectory(chunkDir);
+
+        var chunkPath = Path.Combine(chunkDir, $"chunk_{chunkIndex:D5}");
+        await using var fs = System.IO.File.Create(chunkPath);
+        await chunk.CopyToAsync(fs, ct);
+
+        return Ok(new { chunkIndex, received = true });
+    }
+
+    [HttpPost("finalize")]
+    public async Task<IActionResult> FinalizeUpload(
+        [FromBody] FinalizeUploadRequest req,
+        CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(req.UploadId))
+            return BadRequest(new { error = "uploadId is required." });
+
+        if (req.UploadId.Any(c => !char.IsLetterOrDigit(c) && c != '-'))
+            return BadRequest(new { error = "Invalid uploadId." });
+
+        var chunkDir = Path.Combine(_tempPath, "_chunks", req.UploadId);
+        if (!Directory.Exists(chunkDir))
+            return BadRequest(new { error = "Upload session not found or expired." });
+
+        var chunkFiles = Directory.GetFiles(chunkDir, "chunk_*")
+            .OrderBy(f => f)
+            .ToArray();
+
+        if (chunkFiles.Length != req.TotalChunks)
+            return BadRequest(new { error = $"Expected {req.TotalChunks} chunks, received {chunkFiles.Length}." });
+
+        var ext = Path.GetExtension(req.FileName ?? string.Empty).ToLowerInvariant();
+        if (!AllowedExtensions.Contains(ext))
+            return BadRequest(new { error = $"Unsupported file type. Allowed: {string.Join(", ", AllowedExtensions)}" });
+
+        var job     = _jobStore.CreateJob();
+        var jobDir  = _storage.GetJobDirectory(job.JobId);
+        Directory.CreateDirectory(jobDir);
+        var finalPath = Path.Combine(jobDir, $"original{ext}");
+
+        try
+        {
+            await using (var output = System.IO.File.Create(finalPath))
+            {
+                foreach (var chunkFile in chunkFiles)
+                {
+                    await using var input = System.IO.File.OpenRead(chunkFile);
+                    await input.CopyToAsync(output, ct);
+                }
+            }
+
+            if (new FileInfo(finalPath).Length > _maxFileSize)
+            {
+                System.IO.File.Delete(finalPath);
+                return BadRequest(new { error = $"File exceeds maximum size of {_maxFileSize / 1024 / 1024} MB." });
+            }
+        }
+        finally
+        {
+            try { Directory.Delete(chunkDir, recursive: true); } catch { /* best-effort */ }
+        }
+
+        job.OriginalFilePath = finalPath;
+        job.Status           = JobStatus.Pending;
+        job.ProgressPercent  = 10;
+        await _queue.EnqueueAsync(job.JobId, ct);
+
+        _logger.LogInformation("Job {JobId} created via chunked upload ({Chunks} chunks)", job.JobId, req.TotalChunks);
+        return Accepted(new UploadVideoResponse(job.JobId, job.Status.ToString(), job.CreatedAt));
+    }
+
     [HttpGet("{jobId}/status")]
     public IActionResult GetStatus(string jobId)
     {
@@ -114,3 +214,5 @@ public class VideoController : ControllerBase
         return NoContent();
     }
 }
+
+public record FinalizeUploadRequest(string UploadId, int TotalChunks, string FileName);
