@@ -5,6 +5,8 @@ import type {
   ImageJobStatus,
   InstagramStatus,
   JobStatusResponse,
+  ReelJobStatusResponse,
+  ReelResult,
   UploadVideoResponse,
   ViralScore,
   ViewPrediction,
@@ -127,6 +129,29 @@ export const api = {
       `/instagram/disconnect?userId=${encodeURIComponent(userId)}`,
       { method: 'DELETE' },
     );
+  },
+
+  // ── Auto Reel Generator ──────────────────────────────────────────────────────
+
+  generateReels(sourceJobId: string, userId: string | null): Promise<{ reelJobId: string }> {
+    return request<{ reelJobId: string }>('/auto-reel/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sourceJobId, userId }),
+    });
+  },
+
+  getReelStatus(reelJobId: string): Promise<ReelJobStatusResponse> {
+    return request<ReelJobStatusResponse>(`/auto-reel/${reelJobId}/status`);
+  },
+
+  getReelResult(reelJobId: string): Promise<ReelResult> {
+    return request<ReelResult>(`/auto-reel/${reelJobId}/result`);
+  },
+
+  /** Returns a streamable video URL for use as <video src> or download link. */
+  getReelVideoUrl(reelJobId: string, index: number): string {
+    return `${BASE}/auto-reel/${reelJobId}/download/${index}`;
   },
 
   // ── Image Growth Engine ──────────────────────────────────────────────────────
