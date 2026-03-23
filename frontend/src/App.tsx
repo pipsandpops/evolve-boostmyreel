@@ -365,7 +365,7 @@ function App() {
                 jobId={jobId}
                 userId={userId}
                 isPaidUser={isPaidUser}
-                onUpgrade={() => { setPage('payment'); setSelectedPlan(null); setTimeout(() => scrollTo('pricing'), 100); }}
+                onUpgrade={() => { reset(); setTimeout(() => scrollTo('pricing'), 150); }}
               />
             </div>
           </section>
