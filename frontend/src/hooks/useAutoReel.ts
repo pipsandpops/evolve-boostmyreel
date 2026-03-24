@@ -117,7 +117,7 @@ export function useAutoReel(): UseAutoReelResult {
 
     try {
       // 1. Upload
-      const { jobId: videoJobId } = await api.uploadVideo(file);
+      const { jobId: videoJobId } = await api.uploadVideo(file, undefined, undefined, userId ?? undefined);
       setProgress(15);
 
       // 2. Analyse

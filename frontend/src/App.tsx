@@ -368,7 +368,7 @@ function App() {
                 </>
               )}
 
-              <VideoUploader onUpload={upload} isUploading={state === 'uploading'} uploadPercent={uploadPercent} />
+              <VideoUploader onUpload={(file) => upload(file, userId ?? undefined)} isUploading={state === 'uploading'} uploadPercent={uploadPercent} />
 
               {isWorking && (
                 <div style={{ marginTop: 24 }}>
