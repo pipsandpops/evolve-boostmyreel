@@ -1,4 +1,5 @@
 import { ArrowLeft, Zap, CheckCircle2, XCircle, Trophy, Target, Layers, Globe, ShieldCheck, Star, Quote, TrendingUp, Sparkles } from 'lucide-react';
+import { ShareBar } from './ShareBar';
 
 interface BlogWhyBestProps {
   onBack: () => void;
@@ -514,9 +515,16 @@ export function BlogWhyBest({ onBack, onFounderStory, onGetStarted }: BlogWhyBes
             </button>
           </div>
 
+          {/* Share */}
+          <ShareBar
+            title="Why BoostMyReel Wins — And Why Other Tools Fall Short"
+            description="A full competitor comparison: 15 features, 5 tool categories, and why BoostMyReel is the only all-in-one AI reel tool built for Indian creators."
+            url="https://boostmyreel.com"
+          />
+
           {/* Read next */}
           <div style={{
-            background: 'white', border: '1px solid #e2e8f0',
+            marginTop: 20, background: 'white', border: '1px solid #e2e8f0',
             borderRadius: 16, padding: '20px 24px',
           }}>
             <p style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', letterSpacing: 1, textTransform: 'uppercase', margin: '0 0 14px' }}>
