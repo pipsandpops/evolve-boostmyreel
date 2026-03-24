@@ -1,4 +1,5 @@
 import { ArrowLeft, Zap, TrendingUp, Lightbulb, Rocket, Heart, Star, Quote, Trophy } from 'lucide-react';
+import { ShareBar } from './ShareBar';
 
 interface BlogPageProps {
   onBack: () => void;
@@ -385,9 +386,16 @@ export function BlogPage({ onBack, onGetStarted, onWhyBest }: BlogPageProps) {
             </button>
           </div>
 
+          {/* Share */}
+          <ShareBar
+            title="From Frustration to Viral Reels: How I Built BoostMyReel"
+            description="The founder story behind BoostMyReel — an AI tool for Indian content creators. Built to turn any video into a ready-to-post reel in under 30 seconds."
+            url="https://boostmyreel.com"
+          />
+
           {/* Read Next */}
           <div style={{
-            marginTop: 32, background: 'white', border: '1px solid #e2e8f0',
+            marginTop: 20, background: 'white', border: '1px solid #e2e8f0',
             borderRadius: 16, padding: '20px 24px',
           }}>
             <p style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', letterSpacing: 1, textTransform: 'uppercase', margin: '0 0 14px' }}>
