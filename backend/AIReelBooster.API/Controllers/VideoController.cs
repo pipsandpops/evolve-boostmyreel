@@ -14,9 +14,13 @@ public class VideoController : ControllerBase
 {
     private static readonly string[] AllowedExtensions = [".mp4", ".mov", ".webm", ".avi", ".mkv"];
 
+    private const int FreeUserDailyLimit = 1;
+
     private readonly JobStore _jobStore;
     private readonly BackgroundProcessingQueue _queue;
     private readonly IVideoStorageService _storage;
+    private readonly DailyUsageLimiter _limiter;
+    private readonly AppDbContext _db;
     private readonly long _maxFileSize;
     private readonly string _tempPath;
     private readonly ILogger<VideoController> _logger;
@@ -25,22 +29,45 @@ public class VideoController : ControllerBase
         JobStore jobStore,
         BackgroundProcessingQueue queue,
         IVideoStorageService storage,
+        DailyUsageLimiter limiter,
+        AppDbContext db,
         IOptions<AppSettings> options,
         ILogger<VideoController> logger)
     {
-        _jobStore  = jobStore;
-        _queue     = queue;
-        _storage   = storage;
+        _jobStore    = jobStore;
+        _queue       = queue;
+        _storage     = storage;
+        _limiter     = limiter;
+        _db          = db;
         _maxFileSize = options.Value.Storage.MaxFileSizeBytes;
-        _tempPath  = Path.GetFullPath(options.Value.Storage.TempPath);
-        _logger    = logger;
+        _tempPath    = Path.GetFullPath(options.Value.Storage.TempPath);
+        _logger      = logger;
+    }
+
+    /// <summary>
+    /// Returns true when the user is allowed to start a new video job.
+    /// Paid users are always allowed. Free users are limited to FreeUserDailyLimit per UTC day.
+    /// A null/empty userId is treated as a new anonymous free user.
+    /// </summary>
+    private async Task<bool> IsWithinDailyLimitAsync(string? userId)
+    {
+        if (string.IsNullOrWhiteSpace(userId)) userId = "anon";
+
+        // Paid users have no limit
+        var plan = await _db.UserPlans.FindAsync(userId);
+        if (plan?.IsPaid == true) return true;
+
+        return _limiter.TryConsume(userId, FreeUserDailyLimit);
     }
 
     [HttpPost("upload")]
     [RequestSizeLimit(600_000_000)]
     [RequestFormLimits(MultipartBodyLengthLimit = 600_000_000)]
-    public async Task<IActionResult> Upload(IFormFile file, CancellationToken ct)
+    public async Task<IActionResult> Upload(IFormFile file, [FromForm] string? userId, CancellationToken ct)
     {
+        if (!await IsWithinDailyLimitAsync(userId))
+            return StatusCode(429, new { error = "Free plan limit reached. You can analyse 1 video per day. Upgrade to Pro for unlimited access." });
+
         if (file == null || file.Length == 0)
             return BadRequest(new { error = "No file uploaded." });
 
@@ -117,6 +144,9 @@ public class VideoController : ControllerBase
         [FromBody] FinalizeUploadRequest req,
         CancellationToken ct)
     {
+        if (!await IsWithinDailyLimitAsync(req.UserId))
+            return StatusCode(429, new { error = "Free plan limit reached. You can analyse 1 video per day. Upgrade to Pro for unlimited access." });
+
         if (string.IsNullOrWhiteSpace(req.UploadId))
             return BadRequest(new { error = "uploadId is required." });
 
@@ -215,4 +245,4 @@ public class VideoController : ControllerBase
     }
 }
 
-public record FinalizeUploadRequest(string UploadId, int TotalChunks, string FileName);
+public record FinalizeUploadRequest(string UploadId, int TotalChunks, string FileName, string? UserId);

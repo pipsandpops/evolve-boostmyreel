@@ -87,6 +87,7 @@ async function uploadInChunks(
   file: File,
   onProgress: (pct: number) => void,
   signal?: AbortSignal,
+  userId?: string,
 ): Promise<UploadVideoResponse> {
   const uploadId    = crypto.randomUUID();
   const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
@@ -114,7 +115,7 @@ async function uploadInChunks(
     signal,
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ uploadId, totalChunks, fileName: file.name }),
+    body: JSON.stringify({ uploadId, totalChunks, fileName: file.name, userId }),
   });
 
   onProgress(100);
@@ -126,8 +127,9 @@ export const api = {
     file: File,
     onProgress: (pct: number) => void = () => {},
     signal?: AbortSignal,
+    userId?: string,
   ): Promise<UploadVideoResponse> {
-    return uploadInChunks(file, onProgress, signal);
+    return uploadInChunks(file, onProgress, signal, userId);
   },
 
   getStatus(jobId: string): Promise<JobStatusResponse> {

@@ -48,6 +48,7 @@ builder.Services.AddControllers();
 // Singletons
 builder.Services.AddSingleton<JobStore>();
 builder.Services.AddSingleton<BackgroundProcessingQueue>();
+builder.Services.AddSingleton<DailyUsageLimiter>();
 
 // Scoped services
 builder.Services.AddScoped<IVideoStorageService, VideoStorageService>();

@@ -13,7 +13,7 @@ interface UseVideoUploadResult {
   uploadPercent: number;
   result: AnalysisResult | null;
   error: string | null;
-  upload: (file: File) => Promise<void>;
+  upload: (file: File, userId?: string) => Promise<void>;
   reset: () => void;
 }
 
@@ -64,7 +64,7 @@ export function useVideoUpload(): UseVideoUploadResult {
     }, 2000);
   }, []);
 
-  const upload = useCallback(async (file: File) => {
+  const upload = useCallback(async (file: File, userId?: string) => {
     // Cancel any in-flight upload from a previous attempt
     abortRef.current?.abort();
     const controller = new AbortController();
@@ -81,6 +81,7 @@ export function useVideoUpload(): UseVideoUploadResult {
         file,
         (pct) => setUploadPercent(pct),
         controller.signal,
+        userId,
       );
       setUploadPercent(100);
       setJobId(res.jobId);
