@@ -14,7 +14,7 @@ import { ImageAnalysisPage } from './components/image/ImageAnalysisPage';
 import { AutoReelPage } from './components/autoreels/AutoReelPage';
 import { BlogPage } from './components/BlogPage';
 import { BlogWhyBest } from './components/BlogWhyBest';
-import { Sparkles, RotateCcw, Zap, FileText, Hash, Captions, Menu, X, ImagePlus, Clapperboard, BookOpen } from 'lucide-react';
+import { Sparkles, RotateCcw, Zap, FileText, Hash, Captions, Menu, X, ImagePlus, Clapperboard, BookOpen, Crown } from 'lucide-react';
 
 type Page = 'home' | 'payment' | 'contact' | 'image-analysis' | 'auto-reel' | 'blog' | 'blog-why-best';
 
@@ -255,13 +255,25 @@ function App() {
                 New Video
               </button>
             )}
-            <button
-              onClick={() => scrollTo('pricing')}
-              className="btn-primary nav-cta-desktop"
-              style={{ padding: '8px 18px', fontSize: 13 }}
-            >
-              Get Started
-            </button>
+            {isPaidUser ? (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                padding: '5px 12px', borderRadius: 20,
+                background: 'linear-gradient(135deg, #4f46e5, #7c3aed, #db2777)',
+                boxShadow: '0 2px 10px rgba(124,58,237,0.35)',
+              }}>
+                <Crown size={13} color="white" fill="white" />
+                <span style={{ fontSize: 12, fontWeight: 700, color: 'white', letterSpacing: 0.5 }}>PRO</span>
+              </div>
+            ) : (
+              <button
+                onClick={() => scrollTo('pricing')}
+                className="btn-primary nav-cta-desktop"
+                style={{ padding: '8px 18px', fontSize: 13 }}
+              >
+                Get Started
+              </button>
+            )}
             {/* Mobile menu toggle */}
             <button
               onClick={() => setMobileMenuOpen(o => !o)}
@@ -317,6 +329,17 @@ function App() {
             }}>
               <Clapperboard size={15} /> Auto Reel Generator
             </button>
+            {isPaidUser && (
+              <div style={{
+                marginTop: 8, display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '5px 14px', borderRadius: 20,
+                background: 'linear-gradient(135deg, #4f46e5, #7c3aed, #db2777)',
+                boxShadow: '0 2px 10px rgba(124,58,237,0.35)',
+              }}>
+                <Crown size={13} color="white" fill="white" />
+                <span style={{ fontSize: 12, fontWeight: 700, color: 'white', letterSpacing: 0.5 }}>PRO Member</span>
+              </div>
+            )}
           </div>
         )}
       </nav>
