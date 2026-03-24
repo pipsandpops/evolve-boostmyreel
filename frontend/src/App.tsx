@@ -13,9 +13,10 @@ import { ContactPage } from './components/ContactPage';
 import { ImageAnalysisPage } from './components/image/ImageAnalysisPage';
 import { AutoReelPage } from './components/autoreels/AutoReelPage';
 import { BlogPage } from './components/BlogPage';
+import { BlogWhyBest } from './components/BlogWhyBest';
 import { Sparkles, RotateCcw, Zap, FileText, Hash, Captions, Menu, X, ImagePlus, Clapperboard, BookOpen } from 'lucide-react';
 
-type Page = 'home' | 'payment' | 'contact' | 'image-analysis' | 'auto-reel' | 'blog';
+type Page = 'home' | 'payment' | 'contact' | 'image-analysis' | 'auto-reel' | 'blog' | 'blog-why-best';
 
 function App() {
   const { state, jobId, jobStatus, progressPercent, uploadPercent, result, error, upload, reset } = useVideoUpload();
@@ -75,6 +76,18 @@ function App() {
     return (
       <BlogPage
         onBack={() => { setPage('home'); window.scrollTo(0, 0); }}
+        onGetStarted={() => { setPage('home'); window.scrollTo(0, 0); }}
+        onWhyBest={() => { setPage('blog-why-best'); window.scrollTo(0, 0); }}
+      />
+    );
+  }
+
+  // ── Blog: Why Best page ────────────────────────────────────────────
+  if (page === 'blog-why-best') {
+    return (
+      <BlogWhyBest
+        onBack={() => { setPage('blog'); window.scrollTo(0, 0); }}
+        onFounderStory={() => { setPage('blog'); window.scrollTo(0, 0); }}
         onGetStarted={() => { setPage('home'); window.scrollTo(0, 0); }}
       />
     );

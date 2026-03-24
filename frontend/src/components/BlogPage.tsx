@@ -1,11 +1,12 @@
-import { ArrowLeft, Zap, TrendingUp, Lightbulb, Rocket, Heart, Star, Quote } from 'lucide-react';
+import { ArrowLeft, Zap, TrendingUp, Lightbulb, Rocket, Heart, Star, Quote, Trophy } from 'lucide-react';
 
 interface BlogPageProps {
   onBack: () => void;
   onGetStarted: () => void;
+  onWhyBest: () => void;
 }
 
-export function BlogPage({ onBack, onGetStarted }: BlogPageProps) {
+export function BlogPage({ onBack, onGetStarted, onWhyBest }: BlogPageProps) {
   return (
     <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
 
@@ -381,6 +382,37 @@ export function BlogPage({ onBack, onGetStarted }: BlogPageProps) {
               style={{ padding: '12px 36px', fontSize: 15 }}
             >
               <Zap size={16} fill="white" /> Get Started Free
+            </button>
+          </div>
+
+          {/* Read Next */}
+          <div style={{
+            marginTop: 32, background: 'white', border: '1px solid #e2e8f0',
+            borderRadius: 16, padding: '20px 24px',
+          }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', letterSpacing: 1, textTransform: 'uppercase', margin: '0 0 14px' }}>
+              Read Next
+            </p>
+            <button
+              onClick={onWhyBest}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 16, width: '100%',
+                background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left',
+              }}
+            >
+              <div style={{
+                width: 52, height: 52, borderRadius: 12, flexShrink: 0,
+                background: 'linear-gradient(135deg, #f59e0b, #ef4444)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Trophy size={22} color="white" fill="white" />
+              </div>
+              <div>
+                <p style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', margin: '0 0 2px' }}>
+                  Why BoostMyReel Wins — And Why Other Tools Fall Short
+                </p>
+                <p style={{ fontSize: 12, color: '#94a3b8', margin: 0 }}>Product Analysis · 10 min read</p>
+              </div>
             </button>
           </div>
 
