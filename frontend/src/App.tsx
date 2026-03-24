@@ -12,9 +12,10 @@ import { PaymentPage } from './components/PaymentPage';
 import { ContactPage } from './components/ContactPage';
 import { ImageAnalysisPage } from './components/image/ImageAnalysisPage';
 import { AutoReelPage } from './components/autoreels/AutoReelPage';
-import { Sparkles, RotateCcw, Zap, FileText, Hash, Captions, Menu, X, ImagePlus, Clapperboard } from 'lucide-react';
+import { BlogPage } from './components/BlogPage';
+import { Sparkles, RotateCcw, Zap, FileText, Hash, Captions, Menu, X, ImagePlus, Clapperboard, BookOpen } from 'lucide-react';
 
-type Page = 'home' | 'payment' | 'contact' | 'image-analysis' | 'auto-reel';
+type Page = 'home' | 'payment' | 'contact' | 'image-analysis' | 'auto-reel' | 'blog';
 
 function App() {
   const { state, jobId, jobStatus, progressPercent, uploadPercent, result, error, upload, reset } = useVideoUpload();
@@ -68,6 +69,16 @@ function App() {
     setSelectedPlan(null);
     setTimeout(() => scrollTo('pricing'), 100);
   };
+
+  // ── Blog page ──────────────────────────────────────────────────────
+  if (page === 'blog') {
+    return (
+      <BlogPage
+        onBack={() => { setPage('home'); window.scrollTo(0, 0); }}
+        onGetStarted={() => { setPage('home'); window.scrollTo(0, 0); }}
+      />
+    );
+  }
 
   // ── Contact page ──────────────────────────────────────────────────
   if (page === 'contact') {
@@ -187,6 +198,18 @@ function App() {
             >
               Contact
             </button>
+            <button onClick={() => { setPage('blog'); window.scrollTo(0, 0); }} style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              background: 'none', border: 'none', cursor: 'pointer',
+              padding: '6px 14px', borderRadius: 8,
+              fontSize: 14, fontWeight: 500, color: '#475569',
+              transition: 'all 0.15s',
+            }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#0f172a'; (e.currentTarget as HTMLElement).style.background = '#f8fafc'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#475569'; (e.currentTarget as HTMLElement).style.background = 'none'; }}
+            >
+              <BookOpen size={14} /> Our Story
+            </button>
             {/* Image analysis CTA */}
             <button onClick={() => { setPage('image-analysis'); window.scrollTo(0, 0); }} style={{
               display: 'flex', alignItems: 'center', gap: 6,
@@ -259,6 +282,13 @@ function App() {
               padding: '10px 0', fontSize: 15, fontWeight: 500, color: '#475569',
             }}>
               Contact
+            </button>
+            <button onClick={() => { setMobileMenuOpen(false); setPage('blog'); window.scrollTo(0, 0); }} style={{
+              display: 'flex', alignItems: 'center', gap: 8, width: '100%', textAlign: 'left',
+              background: 'none', border: 'none', cursor: 'pointer',
+              padding: '10px 0', fontSize: 15, fontWeight: 500, color: '#475569',
+            }}>
+              <BookOpen size={15} /> Our Story
             </button>
             <button onClick={() => { setMobileMenuOpen(false); setPage('image-analysis'); window.scrollTo(0, 0); }} style={{
               display: 'flex', alignItems: 'center', gap: 8, width: '100%', textAlign: 'left',
@@ -414,6 +444,12 @@ function App() {
                 fontSize: 13, color: '#64748b', fontWeight: 500, padding: 0,
               }}>
                 Contact
+              </button>
+              <button onClick={() => { setPage('blog'); window.scrollTo(0, 0); }} style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                fontSize: 13, color: '#64748b', fontWeight: 500, padding: 0,
+              }}>
+                Our Story
               </button>
             </div>
             <p style={{ color: '#94a3b8', fontSize: 12, margin: 0 }}>
