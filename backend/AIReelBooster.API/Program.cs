@@ -107,11 +107,39 @@ builder.WebHost.ConfigureKestrel(k =>
 
 var app = builder.Build();
 
-// Ensure SQLite DB + tables exist
+// Ensure SQLite DB + tables exist.
+// EnsureCreated only works on a brand-new DB — use CREATE TABLE IF NOT EXISTS
+// to add tables that were introduced after the DB was first created.
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.EnsureCreated();
+
+    db.Database.ExecuteSqlRaw("""
+        CREATE TABLE IF NOT EXISTS UserReferralCodes (
+            Code      TEXT NOT NULL PRIMARY KEY,
+            UserId    TEXT NOT NULL,
+            CreatedAt TEXT NOT NULL DEFAULT (datetime('now'))
+        )
+        """);
+
+    db.Database.ExecuteSqlRaw("""
+        CREATE TABLE IF NOT EXISTS UserReferrals (
+            UserId        TEXT NOT NULL PRIMARY KEY,
+            ReferrerId    TEXT NOT NULL,
+            HasUploaded   INTEGER NOT NULL DEFAULT 0,
+            CreditAwarded INTEGER NOT NULL DEFAULT 0,
+            CreatedAt     TEXT NOT NULL DEFAULT (datetime('now'))
+        )
+        """);
+
+    db.Database.ExecuteSqlRaw("""
+        CREATE TABLE IF NOT EXISTS UserCredits (
+            UserId    TEXT NOT NULL PRIMARY KEY,
+            Balance   INTEGER NOT NULL DEFAULT 0,
+            UpdatedAt TEXT NOT NULL DEFAULT (datetime('now'))
+        )
+        """);
 }
 
 // Middleware pipeline
