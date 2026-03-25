@@ -72,6 +72,7 @@ export function PaymentPage({ plan, userId, onBack, onSuccess }: PaymentPageProp
               response.razorpay_order_id,
               response.razorpay_signature,
               plan.id,
+              email,
             );
             setPaymentId(response.razorpay_payment_id);
             setPayState('success');

@@ -15,6 +15,7 @@ import { AutoReelPage } from './components/autoreels/AutoReelPage';
 import { BlogPage } from './components/BlogPage';
 import { BlogWhyBest } from './components/BlogWhyBest';
 import { ReferralPanel } from './components/ReferralPanel';
+import { RecoverAccessModal } from './components/RecoverAccessModal';
 import { AdminPage } from './components/AdminPage';
 import { Sparkles, RotateCcw, Zap, FileText, Hash, Captions, Menu, X, ImagePlus, Clapperboard, BookOpen, Crown, Gift } from 'lucide-react';
 
@@ -37,6 +38,7 @@ function App() {
   const isPaidUser = status.isPaid;
 
   const [showReferral, setShowReferral] = useState(false);
+  const [showRecover, setShowRecover]   = useState(false);
   const [showReferredBanner, setShowReferredBanner] = useState(
     () => localStorage.getItem('bmr_referred') === 'true' && !localStorage.getItem('bmr_ref_banner_dismissed')
   );
@@ -152,6 +154,14 @@ function App() {
       {/* ── Referral Panel ── */}
       {showReferral && <ReferralPanel userId={userId} onClose={() => setShowReferral(false)} />}
 
+      {/* ── Recover Access Modal ── */}
+      {showRecover && (
+        <RecoverAccessModal
+          onClose={() => setShowRecover(false)}
+          onRecovered={() => { setShowRecover(false); refreshUserStatus(); }}
+        />
+      )}
+
       {/* ── Referred-user welcome banner ── */}
       {showReferredBanner && (
         <div style={{
@@ -266,13 +276,22 @@ function App() {
                 <span style={{ fontSize: 12, fontWeight: 700, color: 'white', letterSpacing: 0.5 }}>PRO</span>
               </div>
             ) : (
-              <button
-                onClick={() => scrollTo('pricing')}
-                className="btn-primary nav-cta-desktop"
-                style={{ padding: '8px 18px', fontSize: 13 }}
-              >
-                Get Started
-              </button>
+              <>
+                <button
+                  onClick={() => scrollTo('pricing')}
+                  className="btn-primary nav-cta-desktop"
+                  style={{ padding: '8px 18px', fontSize: 13 }}
+                >
+                  Get Started
+                </button>
+                <button
+                  onClick={() => setShowRecover(true)}
+                  className="nav-cta-desktop"
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: '#94a3b8', padding: '4px 6px' }}
+                >
+                  Recover Access
+                </button>
+              </>
             )}
             {/* Refer Friends */}
             <button

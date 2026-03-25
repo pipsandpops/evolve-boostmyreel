@@ -20,7 +20,8 @@ public record VerifyPaymentRequest(
     string PaymentId,
     string OrderId,
     string Signature,
-    string Plan);
+    string Plan,
+    string? Email);
 
 // ── Payment controller ────────────────────────────────────────────────────────
 
@@ -128,6 +129,7 @@ public class PaymentController : ControllerBase
         {
             existing.Plan       = req.Plan;
             existing.IsPaid     = true;
+            existing.Email      = req.Email ?? existing.Email;
             existing.PaymentId  = req.PaymentId;
             existing.OrderId    = req.OrderId;
             existing.ExpiryDate = expiry;
@@ -140,6 +142,7 @@ public class PaymentController : ControllerBase
                 UserId     = req.UserId,
                 Plan       = req.Plan,
                 IsPaid     = true,
+                Email      = req.Email,
                 PaymentId  = req.PaymentId,
                 OrderId    = req.OrderId,
                 ExpiryDate = expiry,
