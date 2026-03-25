@@ -46,7 +46,7 @@ public class VideoController : ControllerBase
 
     /// <summary>
     /// Returns true when the user is allowed to start a new video job.
-    /// Paid users are always allowed. Free users are limited to FreeUserDailyLimit per UTC day.
+    /// Paid users are always allowed. Free users get 1/day; referred users get 2 on their first day.
     /// A null/empty userId is treated as a new anonymous free user.
     /// </summary>
     private async Task<bool> IsWithinDailyLimitAsync(string? userId)
@@ -57,7 +57,13 @@ public class VideoController : ControllerBase
         var plan = await _db.UserPlans.FindAsync(userId);
         if (plan?.IsPaid == true) return true;
 
-        return _limiter.TryConsume(userId, FreeUserDailyLimit);
+        // Referred users get 2 videos on their first day as a welcome bonus
+        int limit = FreeUserDailyLimit;
+        var referral = await _db.UserReferrals.FindAsync(userId);
+        if (referral != null && referral.CreatedAt.Date == DateTime.UtcNow.Date)
+            limit = 2;
+
+        return _limiter.TryConsume(userId, limit);
     }
 
     [HttpPost("upload")]
@@ -199,6 +205,13 @@ public class VideoController : ControllerBase
         job.Status           = JobStatus.Pending;
         job.ProgressPercent  = 10;
         await _queue.EnqueueAsync(job.JobId, ct);
+
+        // Award referral credits if this is the referred user's first upload
+        if (!string.IsNullOrWhiteSpace(req.UserId))
+        {
+            var referralCtrl = HttpContext.RequestServices.GetRequiredService<ReferralController>();
+            await referralCtrl.TryAwardReferralCreditAsync(req.UserId);
+        }
 
         _logger.LogInformation("Job {JobId} created via chunked upload ({Chunks} chunks)", job.JobId, req.TotalChunks);
         return Accepted(new UploadVideoResponse(job.JobId, job.Status.ToString(), job.CreatedAt));
