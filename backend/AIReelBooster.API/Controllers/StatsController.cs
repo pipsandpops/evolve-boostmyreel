@@ -1,5 +1,6 @@
 using AIReelBooster.API.Infrastructure;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace AIReelBooster.API.Controllers;
 
@@ -11,29 +12,26 @@ public class StatsController : ControllerBase
 
     public StatsController(AppDbContext db) => _db = db;
 
-    // GET /api/stats
+    // GET /api/stats — returns current visitor count (no increment)
     [HttpGet]
     public async Task<IActionResult> Get()
     {
-        var stat = await _db.SiteStats.FindAsync("visitor_count");
-        return Ok(new { visitorCount = stat?.Value ?? 10000 });
+        var row = await _db.Database
+            .SqlQueryRaw<long>("SELECT Value FROM SiteStats WHERE Key = 'visitor_count'")
+            .FirstOrDefaultAsync();
+        return Ok(new { visitorCount = row });
     }
 
-    // POST /api/stats/visit
+    // POST /api/stats/visit — atomically increments and returns new count
     [HttpPost("visit")]
     public async Task<IActionResult> Visit()
     {
-        var stat = await _db.SiteStats.FindAsync("visitor_count");
-        if (stat == null)
-        {
-            stat = new Models.Domain.SiteStat { Key = "visitor_count", Value = 10001 };
-            _db.SiteStats.Add(stat);
-        }
-        else
-        {
-            stat.Value += 1;
-        }
-        await _db.SaveChangesAsync();
-        return Ok(new { visitorCount = stat.Value });
+        await _db.Database.ExecuteSqlRawAsync(
+            "UPDATE SiteStats SET Value = Value + 1 WHERE Key = 'visitor_count'");
+
+        var row = await _db.Database
+            .SqlQueryRaw<long>("SELECT Value FROM SiteStats WHERE Key = 'visitor_count'")
+            .FirstOrDefaultAsync();
+        return Ok(new { visitorCount = row });
     }
 }

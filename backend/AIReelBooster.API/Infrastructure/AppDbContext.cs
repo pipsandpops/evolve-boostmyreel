@@ -12,7 +12,6 @@ public class AppDbContext : DbContext
     public DbSet<UserReferralCode> UserReferralCodes => Set<UserReferralCode>();
     public DbSet<UserReferral>     UserReferrals     => Set<UserReferral>();
     public DbSet<UserCredit>       UserCredits       => Set<UserCredit>();
-    public DbSet<SiteStat>         SiteStats         => Set<SiteStat>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -21,6 +20,5 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<UserReferralCode>().HasKey(r => r.Code);
         modelBuilder.Entity<UserReferral>().HasKey(r => r.UserId);
         modelBuilder.Entity<UserCredit>().HasKey(c => c.UserId);
-        modelBuilder.Entity<SiteStat>().HasKey(s => s.Key);
     }
 }
