@@ -21,19 +21,13 @@ const MILESTONES = [
   { count: 10, reward: '50% off Pro — lifetime' },
 ];
 
-/** Derives a stable 8-char referral code from userId — same logic as the backend. */
-function deriveCode(userId: string): string {
-  return userId.replace(/-/g, '').slice(0, 8).toLowerCase();
-}
-
 export function ReferralPanel({ userId, onClose }: Props) {
-  const [copied, setCopied]         = useState(false);
-  const [stats, setStats]           = useState<Stats | null>(null);
+  const [copied, setCopied]             = useState(false);
+  const [stats, setStats]               = useState<Stats | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
 
-  // Generate link client-side immediately — no API wait needed for copy/share
-  const code        = useMemo(() => deriveCode(userId), [userId]);
-  const referralUrl = `https://boostmyreel.com/?ref=${code}`;
+  // Use full userId as the ref param — no DB lookup table needed, always resolves correctly
+  const referralUrl = useMemo(() => `https://boostmyreel.com/?ref=${userId}`, [userId]);
 
   // Register the code with backend + fetch stats (background, non-blocking)
   useEffect(() => {

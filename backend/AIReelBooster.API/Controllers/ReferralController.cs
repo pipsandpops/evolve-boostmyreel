@@ -57,15 +57,17 @@ public class ReferralController : ControllerBase
 
         return Ok(new
         {
-            referralCode = code,
-            referralUrl  = $"{BaseUrl}/?ref={code}",
+            referralCode = userId,                            // full userId is the canonical ref param
+            referralUrl  = $"{BaseUrl}/?ref={userId}",
             credits      = credits?.Balance ?? 0,
             stats,
         });
     }
 
     // ── POST /api/referral/register ──────────────────────────────────────────
-    // Called by the frontend when a new user lands via ?ref=code.
+    // Called by the frontend when a new user lands via ?ref=<referrerId>.
+    // ReferralCode is the referrer's full userId (new links) or 8-char short
+    // code (old links — resolved via UserReferralCodes lookup).
 
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterReferralRequest req)
@@ -77,23 +79,34 @@ public class ReferralController : ControllerBase
         if (await _db.UserReferrals.AnyAsync(r => r.UserId == req.UserId))
             return Ok(new { alreadyRegistered = true });
 
-        // Resolve code → referrerId
-        var codeRecord = await _db.UserReferralCodes.FindAsync(req.ReferralCode);
-        if (codeRecord == null)
-            return Ok(new { unknownCode = true }); // silently ignore bad/old codes
+        // Resolve referrerId: new links use full userId directly;
+        // old 8-char short codes fall back to the lookup table.
+        string referrerId;
+        if (req.ReferralCode.Length > 12)
+        {
+            // Treat as full userId
+            referrerId = req.ReferralCode;
+        }
+        else
+        {
+            var codeRecord = await _db.UserReferralCodes.FindAsync(req.ReferralCode);
+            if (codeRecord == null)
+                return Ok(new { unknownCode = true });
+            referrerId = codeRecord.UserId;
+        }
 
         // Prevent self-referral
-        if (codeRecord.UserId == req.UserId)
+        if (referrerId == req.UserId)
             return Ok(new { selfReferral = true });
 
         _db.UserReferrals.Add(new UserReferral
         {
             UserId     = req.UserId,
-            ReferrerId = codeRecord.UserId,
+            ReferrerId = referrerId,
         });
 
         await _db.SaveChangesAsync();
-        _logger.LogInformation("User {UserId} registered via referral from {ReferrerId}", req.UserId, codeRecord.UserId);
+        _logger.LogInformation("User {UserId} registered via referral from {ReferrerId}", req.UserId, referrerId);
 
         return Ok(new { success = true });
     }
