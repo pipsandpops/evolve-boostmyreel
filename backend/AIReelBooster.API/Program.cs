@@ -44,6 +44,7 @@ builder.Services.AddHttpClient();
 
 // Controllers
 builder.Services.AddControllers();
+builder.Services.AddScoped<ReferralController>();
 
 // Singletons
 builder.Services.AddSingleton<JobStore>();

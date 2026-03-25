@@ -269,4 +269,30 @@ export const api = {
   getImageResult(jobId: string): Promise<ImageAnalysisResult> {
     return request<ImageAnalysisResult>(`/image/${jobId}/result`);
   },
+
+  // ── Referral ─────────────────────────────────────────────────────────────────
+
+  getReferralLink(userId: string): Promise<{
+    referralCode: string;
+    referralUrl: string;
+    credits: number;
+    stats: { total: number; pending: number; successful: number };
+  }> {
+    return request(`/referral/my-link?userId=${encodeURIComponent(userId)}`);
+  },
+
+  registerReferral(userId: string, referralCode: string): Promise<{ success?: boolean }> {
+    return request('/referral/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, referralCode }),
+    });
+  },
+
+  getReferralStats(userId: string): Promise<{
+    stats: { total: number; pending: number; successful: number };
+    credits: number;
+  }> {
+    return request(`/referral/stats?userId=${encodeURIComponent(userId)}`);
+  },
 };

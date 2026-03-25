@@ -14,7 +14,8 @@ import { ImageAnalysisPage } from './components/image/ImageAnalysisPage';
 import { AutoReelPage } from './components/autoreels/AutoReelPage';
 import { BlogPage } from './components/BlogPage';
 import { BlogWhyBest } from './components/BlogWhyBest';
-import { Sparkles, RotateCcw, Zap, FileText, Hash, Captions, Menu, X, ImagePlus, Clapperboard, BookOpen, Crown } from 'lucide-react';
+import { ReferralPanel } from './components/ReferralPanel';
+import { Sparkles, RotateCcw, Zap, FileText, Hash, Captions, Menu, X, ImagePlus, Clapperboard, BookOpen, Crown, Gift } from 'lucide-react';
 
 type Page = 'home' | 'payment' | 'contact' | 'image-analysis' | 'auto-reel' | 'blog' | 'blog-why-best';
 
@@ -28,6 +29,11 @@ function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { userId, status, refresh: refreshUserStatus } = useUserStatus();
   const isPaidUser = status.isPaid;
+
+  const [showReferral, setShowReferral] = useState(false);
+  const [showReferredBanner, setShowReferredBanner] = useState(
+    () => localStorage.getItem('bmr_referred') === 'true' && !localStorage.getItem('bmr_ref_banner_dismissed')
+  );
 
   // ── Instagram OAuth callback ───────────────────────────────────────
   const [igToast, setIgToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
@@ -136,6 +142,33 @@ function App() {
   // ── Main page ─────────────────────────────────────────────────────
   return (
     <div style={{ minHeight: '100vh', background: '#ffffff', display: 'flex', flexDirection: 'column' }}>
+
+      {/* ── Referral Panel ── */}
+      {showReferral && <ReferralPanel userId={userId} onClose={() => setShowReferral(false)} />}
+
+      {/* ── Referred-user welcome banner ── */}
+      {showReferredBanner && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, zIndex: 500,
+          background: 'linear-gradient(135deg, #4f46e5, #db2777)',
+          padding: '10px 20px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+        }}>
+          <Gift size={15} color="white" />
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'white' }}>
+            🎁 You were referred — enjoy <strong>1 extra free video</strong> today!
+          </span>
+          <button onClick={() => {
+            localStorage.setItem('bmr_ref_banner_dismissed', '1');
+            setShowReferredBanner(false);
+          }} style={{
+            background: 'rgba(255,255,255,0.2)', border: 'none', cursor: 'pointer',
+            color: 'white', borderRadius: 6, padding: '2px 8px', fontSize: 12, marginLeft: 8,
+          }}>
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* ── Instagram OAuth toast ── */}
       {igToast && (
@@ -274,6 +307,14 @@ function App() {
                 Get Started
               </button>
             )}
+            {/* Refer Friends */}
+            <button
+              onClick={() => setShowReferral(true)}
+              className="btn-secondary nav-cta-desktop"
+              style={{ padding: '7px 14px', fontSize: 13, display: 'flex', alignItems: 'center', gap: 5 }}
+            >
+              <Gift size={13} /> Refer
+            </button>
             {/* Mobile menu toggle */}
             <button
               onClick={() => setMobileMenuOpen(o => !o)}
@@ -328,6 +369,13 @@ function App() {
               padding: '10px 0', fontSize: 15, fontWeight: 600, color: '#db2777',
             }}>
               <Clapperboard size={15} /> Auto Reel Generator
+            </button>
+            <button onClick={() => { setMobileMenuOpen(false); setShowReferral(true); }} style={{
+              display: 'flex', alignItems: 'center', gap: 8, width: '100%', textAlign: 'left',
+              background: 'none', border: 'none', cursor: 'pointer',
+              padding: '10px 0', fontSize: 15, fontWeight: 600, color: '#4f46e5',
+            }}>
+              <Gift size={15} /> Refer Friends & Earn Credits
             </button>
             {isPaidUser && (
               <div style={{
