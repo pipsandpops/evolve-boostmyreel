@@ -217,7 +217,7 @@ public class ReelVideoProcessor : IReelVideoProcessor
         {
             if (_ffmpegReady) return;
 
-            if (OperatingSystem.IsLinux())
+            if (File.Exists("/usr/bin/ffmpeg"))
             {
                 FFmpeg.SetExecutablesPath("/usr/bin");
             }
@@ -227,8 +227,8 @@ public class ReelVideoProcessor : IReelVideoProcessor
                 Directory.CreateDirectory(path);
                 FFmpeg.SetExecutablesPath(path);
 
-                var ffmpegExe  = Path.Combine(path, "ffmpeg.exe");
-                var ffprobeExe = Path.Combine(path, "ffprobe.exe");
+                var ffmpegExe  = Path.Combine(path, OperatingSystem.IsWindows() ? "ffmpeg.exe" : "ffmpeg");
+                var ffprobeExe = Path.Combine(path, OperatingSystem.IsWindows() ? "ffprobe.exe" : "ffprobe");
 
                 if (!File.Exists(ffmpegExe) || !File.Exists(ffprobeExe))
                 {

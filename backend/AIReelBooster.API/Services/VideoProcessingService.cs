@@ -29,9 +29,9 @@ public class VideoProcessingService : IVideoProcessingService
         {
             if (_ffmpegReady) return;
 
-            // On Linux (Docker/Railway) ffmpeg is installed via apt — skip download
-            var isLinux = !OperatingSystem.IsWindows();
-            if (isLinux)
+            // Use system ffmpeg if available, otherwise download automatically
+            var systemFfmpeg = "/usr/bin/ffmpeg";
+            if (File.Exists(systemFfmpeg))
             {
                 FFmpeg.SetExecutablesPath("/usr/bin");
                 _logger.LogInformation("Using system FFmpeg at /usr/bin");
@@ -39,14 +39,19 @@ public class VideoProcessingService : IVideoProcessingService
             else
             {
                 var ffmpegPath = FFmpeg.ExecutablesPath ?? "./ffmpeg-bin";
-                var ffmpegExe = Path.Combine(ffmpegPath, "ffmpeg.exe");
-                var ffprobeExe = Path.Combine(ffmpegPath, "ffprobe.exe");
+                Directory.CreateDirectory(ffmpegPath);
+                var ffmpegExe = Path.Combine(ffmpegPath, OperatingSystem.IsWindows() ? "ffmpeg.exe" : "ffmpeg");
+                var ffprobeExe = Path.Combine(ffmpegPath, OperatingSystem.IsWindows() ? "ffprobe.exe" : "ffprobe");
 
                 if (!File.Exists(ffmpegExe) || !File.Exists(ffprobeExe))
                 {
                     _logger.LogInformation("FFmpeg not found — downloading automatically to {Path}", ffmpegPath);
                     await FFmpegDownloader.GetLatestVersion(FFmpegVersion.Official, ffmpegPath);
                     _logger.LogInformation("FFmpeg downloaded successfully");
+                }
+                else
+                {
+                    FFmpeg.SetExecutablesPath(ffmpegPath);
                 }
             }
 
