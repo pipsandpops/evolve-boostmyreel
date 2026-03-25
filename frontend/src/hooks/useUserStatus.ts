@@ -6,14 +6,39 @@ export interface UserStatus {
   plan: string;
 }
 
-/** Get or create a persistent userId stored in localStorage.
- *  Returns { userId, isNew } so we know whether to capture a referral code. */
+const LS_KEY     = 'bmr_userId';
+const COOKIE_KEY = 'bmr_uid';
+const COOKIE_MAX_AGE = 365 * 24 * 3600; // 1 year
+
+function readCookie(): string | null {
+  const match = document.cookie.match(new RegExp(`(?:^|; )${COOKIE_KEY}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+function persistUserId(id: string) {
+  localStorage.setItem(LS_KEY, id);
+  document.cookie = `${COOKIE_KEY}=${encodeURIComponent(id)};max-age=${COOKIE_MAX_AGE};path=/;SameSite=Lax`;
+}
+
+/** Get or create a persistent userId.
+ *  Stored in both localStorage AND a 1-year cookie so clearing localStorage
+ *  never wipes the PRO status — the cookie restores it on next visit. */
 function getOrCreateUserId(): { userId: string; isNew: boolean } {
-  const key = 'bmr_userId';
-  const existing = localStorage.getItem(key);
-  if (existing) return { userId: existing, isNew: false };
+  // 1. Try localStorage
+  const fromLS = localStorage.getItem(LS_KEY);
+  if (fromLS) {
+    persistUserId(fromLS); // keep cookie in sync
+    return { userId: fromLS, isNew: false };
+  }
+  // 2. Fall back to cookie (survives localStorage clears)
+  const fromCookie = readCookie();
+  if (fromCookie) {
+    localStorage.setItem(LS_KEY, fromCookie);
+    return { userId: fromCookie, isNew: false };
+  }
+  // 3. Brand new user
   const id = crypto.randomUUID();
-  localStorage.setItem(key, id);
+  persistUserId(id);
   return { userId: id, isNew: true };
 }
 
