@@ -452,14 +452,12 @@ function App() {
           </section>
         )}
 
-        {/* ── Sections visible only on idle ── */}
-        {isIdle && (
-          <>
-            <div id="demo"><DemoSection /></div>
-            <div id="pricing"><PricingSection onSelectPlan={handleSelectPlan} /></div>
-            <div id="about"><AboutSection /></div>
-          </>
-        )}
+        {/* ── Sections hidden while processing/complete ── */}
+        <div style={{ display: isIdle ? undefined : 'none' }}>
+          <div id="demo"><DemoSection /></div>
+          <div id="pricing"><PricingSection onSelectPlan={handleSelectPlan} /></div>
+          <div id="about"><AboutSection /></div>
+        </div>
 
       </main>
 
