@@ -140,6 +140,8 @@ body {
 /* Nav: links visible desktop, burger visible mobile */
 .nav-links { display: flex; align-items: center; gap: 4px; }
 .mobile-menu-btn { display: none; }
+.nav-tool-btn { display: inline-flex; align-items: center; gap: 5px; background: none; border: 1px solid #e2e8f0; cursor: pointer; padding: 5px 12px; border-radius: 8px; font-size: 13px; font-weight: 600; transition: all 0.15s; }
+.nav-tool-btn:hover { background: #f8fafc; border-color: #cbd5e1; }
 
 /* Reusable two-column grid */
 .r-grid-2 {

@@ -225,7 +225,6 @@ function App() {
             {[
               { label: 'Features', id: 'demo' },
               { label: 'Pricing', id: 'pricing' },
-              { label: 'About', id: 'about' },
             ].map(l => (
               <button key={l.id} onClick={() => scrollTo(l.id)} style={{
                 background: 'none', border: 'none', cursor: 'pointer',
@@ -239,50 +238,11 @@ function App() {
                 {l.label}
               </button>
             ))}
-            <button onClick={() => { setPage('contact'); window.scrollTo(0, 0); }} style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              padding: '6px 14px', borderRadius: 8,
-              fontSize: 14, fontWeight: 500, color: '#475569',
-              transition: 'all 0.15s',
-            }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#0f172a'; (e.currentTarget as HTMLElement).style.background = '#f8fafc'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#475569'; (e.currentTarget as HTMLElement).style.background = 'none'; }}
-            >
-              Contact
-            </button>
-            <button onClick={() => { setPage('blog'); window.scrollTo(0, 0); }} style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              background: 'none', border: 'none', cursor: 'pointer',
-              padding: '6px 14px', borderRadius: 8,
-              fontSize: 14, fontWeight: 500, color: '#475569',
-              transition: 'all 0.15s',
-            }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#0f172a'; (e.currentTarget as HTMLElement).style.background = '#f8fafc'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#475569'; (e.currentTarget as HTMLElement).style.background = 'none'; }}
-            >
-              <BookOpen size={14} /> Our Story
-            </button>
-            {/* Image analysis CTA */}
-            <button onClick={() => { setPage('image-analysis'); window.scrollTo(0, 0); }} style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              background: 'linear-gradient(135deg, #7c3aed15, #a855f715)',
-              border: '1px solid #c4b5fd', cursor: 'pointer',
-              padding: '6px 14px', borderRadius: 8,
-              fontSize: 14, fontWeight: 600, color: '#7c3aed',
-              transition: 'all 0.15s',
-            }}>
+            <button onClick={() => { setPage('image-analysis'); window.scrollTo(0, 0); }} className="nav-tool-btn" style={{ color: '#7c3aed' }}>
               <ImagePlus size={14} /> Images
             </button>
-            {/* Auto Reel Generator CTA */}
-            <button onClick={() => { setPage('auto-reel'); window.scrollTo(0, 0); }} style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              background: 'linear-gradient(135deg, #4f46e510, #db277710)',
-              border: '1px solid #fda4af', cursor: 'pointer',
-              padding: '6px 14px', borderRadius: 8,
-              fontSize: 14, fontWeight: 600, color: '#db2777',
-              transition: 'all 0.15s',
-            }}>
-              <Clapperboard size={14} /> Auto Reels
+            <button onClick={() => { setPage('auto-reel'); window.scrollTo(0, 0); }} className="nav-tool-btn" style={{ color: '#db2777' }}>
+              <Clapperboard size={14} /> Reels
             </button>
           </div>
 
