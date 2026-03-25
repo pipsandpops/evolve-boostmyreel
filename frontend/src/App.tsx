@@ -15,11 +15,17 @@ import { AutoReelPage } from './components/autoreels/AutoReelPage';
 import { BlogPage } from './components/BlogPage';
 import { BlogWhyBest } from './components/BlogWhyBest';
 import { ReferralPanel } from './components/ReferralPanel';
+import { AdminPage } from './components/AdminPage';
 import { Sparkles, RotateCcw, Zap, FileText, Hash, Captions, Menu, X, ImagePlus, Clapperboard, BookOpen, Crown, Gift } from 'lucide-react';
 
 type Page = 'home' | 'payment' | 'contact' | 'image-analysis' | 'auto-reel' | 'blog' | 'blog-why-best';
 
 function App() {
+  // Secret admin page — only accessible via ?admin in the URL
+  if (new URLSearchParams(window.location.search).has('admin')) {
+    return <AdminPage />;
+  }
+
   const { state, jobId, jobStatus, progressPercent, uploadPercent, result, error, upload, reset } = useVideoUpload();
   const isIdle = state === 'idle';
   const isWorking = state === 'uploading' || state === 'polling';
