@@ -30,11 +30,13 @@ public class VideoProcessingService : IVideoProcessingService
             if (_ffmpegReady) return;
 
             // Use system ffmpeg if available, otherwise download automatically
-            var systemFfmpeg = "/usr/bin/ffmpeg";
-            if (File.Exists(systemFfmpeg))
+            var systemFfmpeg = File.Exists("/usr/local/bin/ffmpeg") ? "/usr/local/bin"
+                             : File.Exists("/usr/bin/ffmpeg")       ? "/usr/bin"
+                             : null;
+            if (systemFfmpeg != null)
             {
-                FFmpeg.SetExecutablesPath("/usr/bin");
-                _logger.LogInformation("Using system FFmpeg at /usr/bin");
+                FFmpeg.SetExecutablesPath(systemFfmpeg);
+                _logger.LogInformation("Using system FFmpeg at {Path}", systemFfmpeg);
             }
             else
             {

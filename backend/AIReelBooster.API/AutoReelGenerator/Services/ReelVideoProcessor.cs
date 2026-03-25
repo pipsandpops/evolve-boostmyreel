@@ -217,9 +217,12 @@ public class ReelVideoProcessor : IReelVideoProcessor
         {
             if (_ffmpegReady) return;
 
-            if (File.Exists("/usr/bin/ffmpeg"))
+            var sysPath = File.Exists("/usr/local/bin/ffmpeg") ? "/usr/local/bin"
+                        : File.Exists("/usr/bin/ffmpeg")       ? "/usr/bin"
+                        : null;
+            if (sysPath != null)
             {
-                FFmpeg.SetExecutablesPath("/usr/bin");
+                FFmpeg.SetExecutablesPath(sysPath);
             }
             else
             {
