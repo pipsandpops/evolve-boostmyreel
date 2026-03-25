@@ -41,7 +41,6 @@ public class AdminController : ControllerBase
             })
             .ToListAsync();
 
-        var visitorStat = await _db.SiteStats.FindAsync("visitor_count");
         var totalReferrals = await _db.UserReferrals.CountAsync();
         var successfulReferrals = await _db.UserReferrals.CountAsync(r => r.HasUploaded);
 
@@ -50,8 +49,7 @@ public class AdminController : ControllerBase
             paidUsers,
             stats = new
             {
-                totalPaid       = paidUsers.Count,
-                totalVisitors   = visitorStat?.Value ?? 0,
+                totalPaid           = paidUsers.Count,
                 totalReferrals,
                 successfulReferrals,
             }

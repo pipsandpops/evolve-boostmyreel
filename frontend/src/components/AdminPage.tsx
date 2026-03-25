@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { Shield, Users, TrendingUp, Eye, GitBranch, RefreshCw } from 'lucide-react';
+import { Shield, Users, TrendingUp, GitBranch, RefreshCw } from 'lucide-react';
 
 interface PaidUser {
   userId: string;
@@ -15,7 +15,6 @@ interface AdminData {
   paidUsers: PaidUser[];
   stats: {
     totalPaid: number;
-    totalVisitors: number;
     totalReferrals: number;
     successfulReferrals: number;
   };
@@ -124,10 +123,9 @@ export function AdminPage() {
         {/* Stats cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14, marginBottom: 28 }}>
           {[
-            { icon: <Users size={18} color="#4f46e5" />,     label: 'Paid Users',           value: stats.totalPaid,             bg: '#1e1b4b' },
-            { icon: <Eye size={18} color="#10b981" />,       label: 'Total Visitors',        value: stats.totalVisitors.toLocaleString('en-IN'), bg: '#052e16' },
-            { icon: <GitBranch size={18} color="#f59e0b" />, label: 'Referrals',             value: stats.totalReferrals,        bg: '#1c1500' },
-            { icon: <TrendingUp size={18} color="#db2777" />,label: 'Successful Referrals',  value: stats.successfulReferrals,   bg: '#1f0a14' },
+            { icon: <Users size={18} color="#4f46e5" />,     label: 'Paid Users',           value: stats.totalPaid,          bg: '#1e1b4b' },
+            { icon: <GitBranch size={18} color="#f59e0b" />, label: 'Referrals',             value: stats.totalReferrals,     bg: '#1c1500' },
+            { icon: <TrendingUp size={18} color="#db2777" />,label: 'Successful Referrals',  value: stats.successfulReferrals,bg: '#1f0a14' },
           ].map(c => (
             <div key={c.label} style={{
               background: c.bg, border: '1px solid #334155',
