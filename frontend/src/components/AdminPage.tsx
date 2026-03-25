@@ -138,8 +138,11 @@ export function AdminPage() {
                       borderBottom: i < paidUsers.length - 1 ? '1px solid #1e293b' : 'none',
                       background: i % 2 === 0 ? 'transparent' : '#0f172a20',
                     }}>
-                      <td style={{ padding: '12px 16px', fontFamily: 'monospace', fontSize: 12, color: '#94a3b8' }}>
-                        {u.userId.slice(0, 8)}…{u.userId.slice(-4)}
+                      <td style={{ padding: '12px 16px', fontFamily: 'monospace', fontSize: 11, color: '#94a3b8', cursor: 'pointer' }}
+                        title="Click to copy"
+                        onClick={() => navigator.clipboard.writeText(u.userId)}
+                      >
+                        {u.userId}
                       </td>
                       <td style={{ padding: '12px 16px' }}>
                         <span style={{
