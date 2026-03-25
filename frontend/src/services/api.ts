@@ -190,12 +190,29 @@ export const api = {
     paymentId: string,
     orderId: string,
     signature: string,
-    plan: string
+    plan: string,
+    email?: string,
   ): Promise<{ success: boolean }> {
     return request<{ success: boolean }>('/payment/verify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, paymentId, orderId, signature, plan }),
+      body: JSON.stringify({ userId, paymentId, orderId, signature, plan, email }),
+    });
+  },
+
+  requestOtp(email: string): Promise<{ message: string }> {
+    return request('/user/request-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+  },
+
+  verifyOtp(email: string, code: string): Promise<{ userId: string; plan: string }> {
+    return request('/user/verify-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, code }),
     });
   },
 

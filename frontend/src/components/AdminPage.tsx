@@ -3,6 +3,7 @@ import { Shield, Users, TrendingUp, GitBranch, RefreshCw } from 'lucide-react';
 
 interface PaidUser {
   userId: string;
+  email: string | null;
   plan: string;
   paymentId: string | null;
   orderId: string | null;
@@ -123,7 +124,7 @@ export function AdminPage() {
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid #334155' }}>
-                    {['User ID', 'Plan', 'Paid At', 'Expires', 'Status'].map(h => (
+                    {['User ID', 'Email', 'Plan', 'Paid At', 'Expires', 'Status'].map(h => (
                       <th key={h} style={{
                         padding: '10px 16px', textAlign: 'left',
                         fontSize: 11, fontWeight: 600, color: '#475569',
@@ -142,7 +143,10 @@ export function AdminPage() {
                         title="Click to copy"
                         onClick={() => navigator.clipboard.writeText(u.userId)}
                       >
-                        {u.userId}
+                        {u.userId.slice(0, 8)}…
+                      </td>
+                      <td style={{ padding: '12px 16px', fontSize: 12, color: '#94a3b8' }}>
+                        {u.email ?? '—'}
                       </td>
                       <td style={{ padding: '12px 16px' }}>
                         <span style={{

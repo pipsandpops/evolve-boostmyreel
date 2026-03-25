@@ -22,6 +22,7 @@ public class AdminController : ControllerBase
             .Select(u => new
             {
                 userId    = u.UserId,
+                email     = u.Email,
                 plan      = u.Plan,
                 paymentId = u.PaymentId,
                 orderId   = u.OrderId,

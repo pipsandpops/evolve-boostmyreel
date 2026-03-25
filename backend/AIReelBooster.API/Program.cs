@@ -141,6 +141,19 @@ using (var scope = app.Services.CreateScope())
             UpdatedAt TEXT NOT NULL DEFAULT (datetime('now'))
         )
         """);
+
+    db.Database.ExecuteSqlRaw("""
+        CREATE TABLE IF NOT EXISTS OtpCodes (
+            Id        INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            Email     TEXT NOT NULL,
+            Code      TEXT NOT NULL,
+            ExpiresAt TEXT NOT NULL,
+            CreatedAt TEXT NOT NULL DEFAULT (datetime('now'))
+        )
+        """);
+
+    // Add Email column to UserPlans if not exists (safe for existing DBs)
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE UserPlans ADD COLUMN Email TEXT"); } catch { /* already exists */ }
 }
 
 // Middleware pipeline
