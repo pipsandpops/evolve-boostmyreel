@@ -12,19 +12,9 @@ public class AdminController : ControllerBase
 
     public AdminController(AppDbContext db) => _db = db;
 
-    private bool IsAuthorized(string? token)
-    {
-        var adminToken = Environment.GetEnvironmentVariable("ADMIN_TOKEN");
-        if (string.IsNullOrWhiteSpace(adminToken)) return false;
-        return token?.Trim() == adminToken.Trim();
-    }
-
-    // GET /api/admin/users?token=xxx
+    // GET /api/admin/users
     [HttpGet("users")]
-    public async Task<IActionResult> GetUsers([FromQuery] string? token)
-    {
-        if (!IsAuthorized(token))
-            return Unauthorized(new { error = "Invalid token." });
+    public async Task<IActionResult> GetUsers()
 
         var paidUsers = await _db.UserPlans
             .Where(u => u.IsPaid)
