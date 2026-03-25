@@ -16,7 +16,7 @@ public class AdminController : ControllerBase
     {
         var adminToken = Environment.GetEnvironmentVariable("ADMIN_TOKEN");
         if (string.IsNullOrWhiteSpace(adminToken)) return false;
-        return token == adminToken;
+        return token?.Trim() == adminToken.Trim();
     }
 
     // GET /api/admin/users?token=xxx
