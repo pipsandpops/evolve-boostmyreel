@@ -17,18 +17,20 @@ function getOrCreateUserId(): { userId: string; isNew: boolean } {
   return { userId: id, isNew: true };
 }
 
-/** If the user arrived via ?ref=CODE register the referral once. */
+/** If the user arrived via ?ref=<referrerId> register the referral.
+ *  Retries on each page load until confirmed (idempotent on the server). */
 function captureReferral(userId: string): void {
-  if (localStorage.getItem('bmr_ref_done')) return;
   const code = new URLSearchParams(window.location.search).get('ref');
   if (!code) return;
+  if (code === userId) return; // self-referral
 
-  // Mark as referred (used by welcome banner)
+  // Mark as referred for the welcome banner
   localStorage.setItem('bmr_referred', 'true');
-  localStorage.setItem('bmr_ref_done', '1');
 
-  // Fire-and-forget — errors are silently ignored
-  api.registerReferral(userId, code).catch(() => {});
+  // Keep retrying until the server confirms (server is idempotent)
+  api.registerReferral(userId, code)
+    .then(() => localStorage.setItem('bmr_ref_done', '1'))
+    .catch(() => {}); // will retry on next page load
 }
 
 export function useUserStatus() {
