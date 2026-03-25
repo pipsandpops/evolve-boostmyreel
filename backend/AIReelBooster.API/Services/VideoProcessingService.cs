@@ -49,12 +49,13 @@ public class VideoProcessingService : IVideoProcessingService
                 {
                     _logger.LogInformation("FFmpeg not found — downloading automatically to {Path}", ffmpegPath);
                     await FFmpegDownloader.GetLatestVersion(FFmpegVersion.Official, ffmpegPath);
+                    if (!OperatingSystem.IsWindows())
+                    {
+                        System.Diagnostics.Process.Start("chmod", $"+x {ffmpegExe} {ffprobeExe}")?.WaitForExit();
+                    }
                     _logger.LogInformation("FFmpeg downloaded successfully");
                 }
-                else
-                {
-                    FFmpeg.SetExecutablesPath(ffmpegPath);
-                }
+                FFmpeg.SetExecutablesPath(ffmpegPath);
             }
 
             _ffmpegReady = true;

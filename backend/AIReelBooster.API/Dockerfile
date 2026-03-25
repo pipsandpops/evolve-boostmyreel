@@ -9,12 +9,10 @@ RUN dotnet publish -c Release -o /app/publish
 # ── Runtime stage ──────────────────────────────────────────────────────────────
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
 
-# Install ffmpeg using a static binary (avoids apt-get network failures)
-RUN apt-get update && apt-get install -y --no-install-recommends xz-utils curl ca-certificates \
-    && rm -rf /var/lib/apt/lists/* \
-    && curl -L https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz \
-       | tar xJ --strip-components=1 -C /usr/local/bin/ --wildcards '*/ffmpeg' '*/ffprobe' \
-    && chmod +x /usr/local/bin/ffmpeg /usr/local/bin/ffprobe
+# Install ffmpeg
+RUN DEBIAN_FRONTEND=noninteractive apt-get update \
+    && apt-get install -y --no-install-recommends ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 COPY --from=build /app/publish .
