@@ -140,6 +140,17 @@ using (var scope = app.Services.CreateScope())
             UpdatedAt TEXT NOT NULL DEFAULT (datetime('now'))
         )
         """);
+
+    // Visitor counter — seed at 10 000 if not already present
+    db.Database.ExecuteSqlRaw("""
+        CREATE TABLE IF NOT EXISTS SiteStats (
+            Key   TEXT NOT NULL PRIMARY KEY,
+            Value INTEGER NOT NULL DEFAULT 0
+        )
+        """);
+    db.Database.ExecuteSqlRaw("""
+        INSERT OR IGNORE INTO SiteStats (Key, Value) VALUES ('visitor_count', 10000)
+        """);
 }
 
 // Middleware pipeline
