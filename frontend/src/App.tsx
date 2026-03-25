@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import './index.css';
-import { api } from './services/api';
 import { useVideoUpload } from './hooks/useVideoUpload';
 import { useUserStatus } from './hooks/useUserStatus';
 import { VideoUploader } from './components/VideoUploader';
@@ -30,41 +29,6 @@ function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { userId, status, refresh: refreshUserStatus } = useUserStatus();
   const isPaidUser = status.isPaid;
-
-  const [visitorCount, setVisitorCount] = useState<number | null>(null);
-  const [displayCount, setDisplayCount] = useState(0);
-
-  useEffect(() => {
-    // Only record one visit per browser session
-    const key = 'bmr_visited';
-    const call = sessionStorage.getItem(key)
-      ? api.getReferralStats(userId).then(() => {}).catch(() => {}) // no-op reuse
-      : api.recordVisit().then(r => { setVisitorCount(r.visitorCount); sessionStorage.setItem(key, '1'); }).catch(() => setVisitorCount(10000));
-    void call;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // On first GET (for returning visitors), fetch without incrementing
-  useEffect(() => {
-    if (sessionStorage.getItem('bmr_visited') && visitorCount === null) {
-      fetch('/api/stats').then(r => r.json()).then(d => setVisitorCount(d.visitorCount)).catch(() => setVisitorCount(10000));
-    }
-  }, [visitorCount]);
-
-  // Animate the counter up when visitorCount arrives
-  useEffect(() => {
-    if (visitorCount === null) return;
-    const start = Math.max(0, visitorCount - 80);
-    setDisplayCount(start);
-    let current = start;
-    const step = Math.ceil((visitorCount - start) / 40);
-    const t = setInterval(() => {
-      current = Math.min(current + step, visitorCount);
-      setDisplayCount(current);
-      if (current >= visitorCount) clearInterval(t);
-    }, 25);
-    return () => clearInterval(t);
-  }, [visitorCount]);
 
   const [showReferral, setShowReferral] = useState(false);
   const [showReferredBanner, setShowReferredBanner] = useState(
@@ -446,31 +410,6 @@ function App() {
                       AI-Powered Content Generator
                     </span>
                   </div>
-
-                  {/* Visitor counter */}
-                  {visitorCount !== null && (
-                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
-                      <div style={{
-                        display: 'inline-flex', alignItems: 'center', gap: 8,
-                        background: 'linear-gradient(135deg, #fff7ed, #fdf2f8)',
-                        border: '1px solid #fda4af', borderRadius: 99,
-                        padding: '6px 16px',
-                      }}>
-                        <div style={{ display: 'flex', gap: 3 }}>
-                          {[0,1,2].map(i => (
-                            <div key={i} style={{
-                              width: 7, height: 7, borderRadius: '50%',
-                              background: i === 0 ? '#10b981' : i === 1 ? '#4f46e5' : '#db2777',
-                            }} />
-                          ))}
-                        </div>
-                        <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
-                          {displayCount.toLocaleString('en-IN')}+
-                        </span>
-                        <span style={{ fontSize: 13, color: '#64748b' }}>creators boosted their reels</span>
-                      </div>
-                    </div>
-                  )}
 
                   <h1 style={{
                     textAlign: 'center', fontSize: 'clamp(32px, 5vw, 52px)', fontWeight: 800,
