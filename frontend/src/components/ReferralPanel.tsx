@@ -24,11 +24,12 @@ export function ReferralPanel({ userId, onClose }: Props) {
   const [data, setData]       = useState<ReferralData | null>(null);
   const [copied, setCopied]   = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError]     = useState<string | null>(null);
 
   useEffect(() => {
     api.getReferralLink(userId)
       .then(res => setData({ referralUrl: res.referralUrl, credits: res.credits, stats: res.stats }))
-      .catch(() => {})
+      .catch(err => setError(err instanceof Error ? err.message : 'Failed to load referral link.'))
       .finally(() => setLoading(false));
   }, [userId]);
 
@@ -89,6 +90,13 @@ export function ReferralPanel({ userId, onClose }: Props) {
 
         {loading ? (
           <div style={{ textAlign: 'center', padding: '32px 0', color: '#94a3b8' }}>Loading…</div>
+        ) : error ? (
+          <div style={{ textAlign: 'center', padding: '24px 0' }}>
+            <div style={{ fontSize: 14, color: '#ef4444', marginBottom: 12 }}>{error}</div>
+            <button onClick={() => { setError(null); setLoading(true); api.getReferralLink(userId).then(res => setData({ referralUrl: res.referralUrl, credits: res.credits, stats: res.stats })).catch(e => setError(e instanceof Error ? e.message : 'Failed')).finally(() => setLoading(false)); }} style={{ padding: '8px 16px', borderRadius: 8, background: '#4f46e5', color: 'white', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+              Retry
+            </button>
+          </div>
         ) : (
           <>
             {/* Credits balance */}
