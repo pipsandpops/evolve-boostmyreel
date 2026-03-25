@@ -289,12 +289,6 @@ export const api = {
     });
   },
 
-  // ── Site Stats ───────────────────────────────────────────────────────────────
-
-  recordVisit(): Promise<{ visitorCount: number }> {
-    return request('/stats/visit', { method: 'POST' });
-  },
-
   getReferralStats(userId: string): Promise<{
     stats: { total: number; pending: number; successful: number };
     credits: number;
