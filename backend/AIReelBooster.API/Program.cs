@@ -7,6 +7,7 @@ using AIReelBooster.API.ImageGrowthEngine.Infrastructure;
 using AIReelBooster.API.ImageGrowthEngine.Interfaces;
 using AIReelBooster.API.ImageGrowthEngine.Services;
 using AIReelBooster.API.ImageGrowthEngine.Workers;
+using AIReelBooster.API.Controllers;
 using AIReelBooster.API.Infrastructure;
 using AIReelBooster.API.Middleware;
 using AIReelBooster.API.Services;
@@ -44,6 +45,7 @@ builder.Services.AddHttpClient();
 
 // Controllers
 builder.Services.AddControllers();
+builder.Services.AddScoped<ReferralController>();
 
 // Singletons
 builder.Services.AddSingleton<JobStore>();
