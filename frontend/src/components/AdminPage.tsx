@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Shield, Users, TrendingUp, GitBranch, RefreshCw } from 'lucide-react';
 
 interface PaidUser {
@@ -27,17 +27,15 @@ const PLAN_COLORS: Record<string, string> = {
 };
 
 export function AdminPage() {
-  const [token, setToken]     = useState('');
   const [data, setData]       = useState<AdminData | null>(null);
   const [error, setError]     = useState('');
   const [loading, setLoading] = useState(false);
 
-  const fetchData = useCallback(async (t: string) => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch(`/api/admin/users?token=${encodeURIComponent(t)}`);
-      if (res.status === 401) { setError('Invalid token.'); return; }
+      const res = await fetch('/api/admin/users');
       if (!res.ok) { setError('Server error.'); return; }
       setData(await res.json());
     } catch {
@@ -47,56 +45,25 @@ export function AdminPage() {
     }
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    fetchData(token);
-  };
+  useEffect(() => { fetchData(); }, [fetchData]);
 
-  if (!data) {
+  if (loading && !data) {
     return (
-      <div style={{
-        minHeight: '100vh', background: '#0f172a',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}>
-        <div style={{
-          background: '#1e293b', borderRadius: 16, padding: 36,
-          width: '100%', maxWidth: 380,
-          border: '1px solid #334155',
-          boxShadow: '0 24px 64px rgba(0,0,0,0.5)',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
-            <Shield size={22} color="#4f46e5" />
-            <span style={{ fontSize: 18, fontWeight: 700, color: 'white' }}>Admin Access</span>
-          </div>
-          <form onSubmit={handleSubmit}>
-            <input
-              type="password"
-              placeholder="Enter admin token"
-              value={token}
-              onChange={e => setToken(e.target.value)}
-              style={{
-                width: '100%', padding: '10px 14px', borderRadius: 10,
-                background: '#0f172a', border: '1px solid #334155',
-                color: 'white', fontSize: 14, marginBottom: 12,
-                outline: 'none', boxSizing: 'border-box',
-              }}
-              autoFocus
-            />
-            {error && <div style={{ color: '#ef4444', fontSize: 13, marginBottom: 10 }}>{error}</div>}
-            <button type="submit" disabled={loading} style={{
-              width: '100%', padding: '10px 0', borderRadius: 10,
-              background: 'linear-gradient(135deg, #4f46e5, #db2777)',
-              color: 'white', border: 'none', cursor: 'pointer',
-              fontSize: 14, fontWeight: 600,
-              opacity: loading ? 0.7 : 1,
-            }}>
-              {loading ? 'Checking…' : 'Access Dashboard'}
-            </button>
-          </form>
-        </div>
+      <div style={{ minHeight: '100vh', background: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <span style={{ color: '#94a3b8', fontSize: 15 }}>Loading…</span>
       </div>
     );
   }
+
+  if (error && !data) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <span style={{ color: '#ef4444', fontSize: 15 }}>{error}</span>
+      </div>
+    );
+  }
+
+  if (!data) return null;
 
   const { paidUsers, stats } = data;
 
@@ -110,7 +77,7 @@ export function AdminPage() {
             <Shield size={22} color="#4f46e5" />
             <span style={{ fontSize: 20, fontWeight: 700, color: 'white' }}>BoostMyReel Admin</span>
           </div>
-          <button onClick={() => fetchData(token)} style={{
+          <button onClick={fetchData} style={{
             display: 'flex', alignItems: 'center', gap: 6,
             background: '#1e293b', border: '1px solid #334155',
             color: '#94a3b8', borderRadius: 8, padding: '7px 14px',
