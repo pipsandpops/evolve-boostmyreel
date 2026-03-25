@@ -15,7 +15,7 @@ public class AdminController : ControllerBase
     // GET /api/admin/users
     [HttpGet("users")]
     public async Task<IActionResult> GetUsers()
-
+    {
         var paidUsers = await _db.UserPlans
             .Where(u => u.IsPaid)
             .OrderByDescending(u => u.UpdatedAt)
