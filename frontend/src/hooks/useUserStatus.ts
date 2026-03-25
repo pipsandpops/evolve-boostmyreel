@@ -18,7 +18,7 @@ function getOrCreateUserId(): { userId: string; isNew: boolean } {
 }
 
 /** If the user arrived via ?ref=CODE register the referral once. */
-function captureReferral(userId: string, isNew: boolean): void {
+function captureReferral(userId: string): void {
   if (localStorage.getItem('bmr_ref_done')) return;
   const code = new URLSearchParams(window.location.search).get('ref');
   if (!code) return;
@@ -32,14 +32,14 @@ function captureReferral(userId: string, isNew: boolean): void {
 }
 
 export function useUserStatus() {
-  const [{ userId, isNew }] = useState(() => getOrCreateUserId());
+  const [{ userId }] = useState(() => getOrCreateUserId());
   const [status, setStatus] = useState<UserStatus>({ isPaid: false, plan: 'free' });
   const [loading, setLoading] = useState(true);
 
   // Capture referral code once on mount
   useEffect(() => {
-    captureReferral(userId, isNew);
-  }, [userId, isNew]);
+    captureReferral(userId);
+  }, [userId]);
 
   const refresh = useCallback(async () => {
     try {
