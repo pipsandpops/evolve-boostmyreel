@@ -225,6 +225,7 @@ function App() {
             {[
               { label: 'Features', id: 'demo' },
               { label: 'Pricing', id: 'pricing' },
+              { label: 'About', id: 'about' },
             ].map(l => (
               <button key={l.id} onClick={() => scrollTo(l.id)} style={{
                 background: 'none', border: 'none', cursor: 'pointer',
@@ -451,14 +452,12 @@ function App() {
           </section>
         )}
 
-        {/* ── Sections visible only on idle ── */}
-        {isIdle && (
-          <>
-            <div id="demo"><DemoSection /></div>
-            <div id="pricing"><PricingSection onSelectPlan={handleSelectPlan} /></div>
-            <div id="about"><AboutSection /></div>
-          </>
-        )}
+        {/* ── Sections hidden while processing/complete ── */}
+        <div style={{ display: isIdle ? undefined : 'none' }}>
+          <div id="demo"><DemoSection /></div>
+          <div id="pricing"><PricingSection onSelectPlan={handleSelectPlan} /></div>
+          <div id="about"><AboutSection /></div>
+        </div>
 
       </main>
 
