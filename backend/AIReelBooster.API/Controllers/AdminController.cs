@@ -46,4 +46,21 @@ public class AdminController : ControllerBase
             }
         });
     }
+
+    // POST /api/admin/set-email
+    [HttpPost("set-email")]
+    public async Task<IActionResult> SetEmail([FromBody] SetEmailRequest req)
+    {
+        if (string.IsNullOrWhiteSpace(req.UserId) || string.IsNullOrWhiteSpace(req.Email))
+            return BadRequest(new { error = "userId and email are required." });
+
+        var plan = await _db.UserPlans.FirstOrDefaultAsync(u => u.UserId == req.UserId);
+        if (plan == null) return NotFound(new { error = "User not found." });
+
+        plan.Email = req.Email.Trim().ToLowerInvariant();
+        await _db.SaveChangesAsync();
+        return Ok(new { success = true, userId = plan.UserId, email = plan.Email });
+    }
 }
+
+public record SetEmailRequest(string UserId, string Email);
