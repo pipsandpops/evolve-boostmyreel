@@ -390,7 +390,7 @@ export function BlogPage({ onBack, onGetStarted, onWhyBest }: BlogPageProps) {
           <ShareBar
             title="From Frustration to Viral Reels: How I Built BoostMyReel"
             description="The founder story behind BoostMyReel — an AI tool for Indian content creators. Built to turn any video into a ready-to-post reel in under 30 seconds."
-            url="https://boostmyreel.com"
+            url="https://boostmyreel.com/og/blog"
           />
 
           {/* Read Next */}

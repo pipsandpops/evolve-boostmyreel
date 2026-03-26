@@ -519,7 +519,7 @@ export function BlogWhyBest({ onBack, onFounderStory, onGetStarted }: BlogWhyBes
           <ShareBar
             title="Why BoostMyReel Wins — And Why Other Tools Fall Short"
             description="A full competitor comparison: 15 features, 5 tool categories, and why BoostMyReel is the only all-in-one AI reel tool built for Indian creators."
-            url="https://boostmyreel.com"
+            url="https://boostmyreel.com/og/blog-why-best"
           />
 
           {/* Read next */}
