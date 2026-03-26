@@ -482,6 +482,7 @@ function App() {
                 userId={userId}
                 isPaidUser={isPaidUser}
                 onUpgrade={() => { reset(); setTimeout(() => scrollTo('pricing'), 150); }}
+                onOpenReferral={() => setShowReferral(true)}
               />
             </div>
           </section>
