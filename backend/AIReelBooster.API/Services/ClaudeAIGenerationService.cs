@@ -73,6 +73,14 @@ public class ClaudeAIGenerationService : IAIGenerationService
         return ParseClaudeResponse(responseJson);
     }
 
+    // Evergreen high-volume hashtags that consistently trend on Reels/TikTok.
+    // Appended after Claude's niche tags to add a reach-boosting layer.
+    // Deduplicated so Claude can't accidentally double-add them.
+    private static readonly string[] EvergreenHashtags =
+    [
+        "reels", "viral", "explore", "trending", "fyp",
+    ];
+
     private static (string Hook, string Caption, List<string> Hashtags) ParseClaudeResponse(string responseJson)
     {
         var doc = JsonDocument.Parse(responseJson);
@@ -88,13 +96,20 @@ public class ClaudeAIGenerationService : IAIGenerationService
 
         var result = JsonDocument.Parse(text).RootElement;
 
-        var hook = result.GetProperty("hook").GetString() ?? "Watch this now!";
+        var hook    = result.GetProperty("hook").GetString()    ?? "Watch this now!";
         var caption = result.GetProperty("caption").GetString() ?? "Check this out!";
+
         var hashtags = result.GetProperty("hashtags")
             .EnumerateArray()
             .Select(h => h.GetString() ?? "")
             .Where(h => !string.IsNullOrWhiteSpace(h))
             .ToList();
+
+        // Append evergreen boosters that aren't already in Claude's list
+        var existing = hashtags.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var tag in EvergreenHashtags)
+            if (!existing.Contains(tag))
+                hashtags.Add(tag);
 
         return (hook, caption, hashtags);
     }
