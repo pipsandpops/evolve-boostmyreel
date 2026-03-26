@@ -158,6 +158,48 @@ public class ReferralController : ControllerBase
         _logger.LogInformation(
             "Awarded {Credits} credits to referrer {ReferrerId} for referred user {UserId}",
             ReferralCreditReward, referral.ReferrerId, userId);
+
+        // Milestone: 5 successful referrals → grant 7 days of Pro
+        await TryGrantMilestoneProAsync(referral.ReferrerId);
+    }
+
+    private async Task TryGrantMilestoneProAsync(string referrerId)
+    {
+        const int ProMilestone = 5;
+
+        var successfulCount = await _db.UserReferrals
+            .CountAsync(r => r.ReferrerId == referrerId && r.HasUploaded);
+
+        if (successfulCount != ProMilestone) return;  // only trigger exactly at milestone
+
+        var plan = await _db.UserPlans.FindAsync(referrerId);
+        var sevenDays = DateTime.UtcNow.AddDays(7);
+
+        if (plan == null)
+        {
+            _db.UserPlans.Add(new UserPlan
+            {
+                UserId    = referrerId,
+                Plan      = "starter",
+                IsPaid    = true,
+                ExpiryDate = sevenDays,
+                UpdatedAt = DateTime.UtcNow,
+            });
+        }
+        else if (!plan.IsPaid || plan.ExpiryDate == null || plan.ExpiryDate < DateTime.UtcNow)
+        {
+            // Only grant if not already on a paid plan (don't shorten an existing subscription)
+            plan.IsPaid    = true;
+            plan.Plan      = "starter";
+            plan.ExpiryDate = sevenDays;
+            plan.UpdatedAt = DateTime.UtcNow;
+        }
+        else return;  // already on paid plan — don't touch
+
+        await _db.SaveChangesAsync();
+        _logger.LogInformation(
+            "Milestone: granted 7-day Pro to referrer {ReferrerId} for reaching {Count} referrals",
+            referrerId, ProMilestone);
     }
 
     private async Task<object> GetStatsAsync(string userId)
