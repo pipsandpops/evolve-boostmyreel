@@ -106,9 +106,29 @@ public class ReelGenerationWorker : BackgroundService
             _logger.LogInformation("ReelJob {Id}: {Count} candidate segments", reelJobId, segments.Count);
 
             // ── Step 2: Ranking ────────────────────────────────────────────────
-            SetStatus(reelJob, ReelJobStatus.Ranking, 15, "Ranking segments…");
+            SetStatus(reelJob, ReelJobStatus.Ranking, 15, "Analysing niche keywords…");
 
-            var ranked = ranker.RankAndSelect(segments, subtitles, _settings.MaxReels);
+            // Build full transcript from all subtitles so Claude can understand the video's niche
+            HashSet<string>? dynamicKeywords = null;
+            if (subtitles is { Count: > 0 })
+            {
+                var fullTranscript = string.Join(" ", subtitles.Select(s => s.Text));
+                try
+                {
+                    dynamicKeywords = await aiGeneration.ExtractViralKeywordsAsync(fullTranscript, ct);
+                    _logger.LogInformation(
+                        "ReelJob {Id}: Claude extracted {Count} niche keywords: {Keywords}",
+                        reelJobId, dynamicKeywords.Count, string.Join(", ", dynamicKeywords));
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "ReelJob {Id}: keyword extraction failed — using fallback list", reelJobId);
+                }
+            }
+
+            SetStatus(reelJob, ReelJobStatus.Ranking, 18, "Ranking segments…");
+
+            var ranked = ranker.RankAndSelect(segments, subtitles, _settings.MaxReels, dynamicKeywords);
             _logger.LogInformation("ReelJob {Id}: {Count} segments selected", reelJobId, ranked.Count);
 
             if (ranked.Count == 0)

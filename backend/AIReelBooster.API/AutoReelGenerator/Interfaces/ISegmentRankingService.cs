@@ -9,8 +9,8 @@ namespace AIReelBooster.API.AutoReelGenerator.Interfaces;
 /// Scoring weights:
 ///   Motion intensity  35% – visual activity within the window
 ///   Speech density    30% – words-per-second from transcript overlap
-///   Keyword presence  15% – high-engagement vocabulary in transcript
-///   Duration optimum  20% – preference for 10–20 s clips
+///   Keyword presence  15% – niche-specific engagement vocabulary (dynamic via Claude, falls back to hardcoded list)
+///   Duration optimum  20% – preference for 15–30 s clips
 /// </summary>
 public interface ISegmentRankingService
 {
@@ -23,8 +23,13 @@ public interface ISegmentRankingService
     ///   Optional subtitle entries from the source job; used to compute speech and keyword scores.
     /// </param>
     /// <param name="maxReels">Maximum number of reels to return.</param>
+    /// <param name="dynamicKeywords">
+    ///   Niche-specific viral keywords extracted by Claude from the full transcript.
+    ///   When null or empty the service falls back to its internal hardcoded vocabulary.
+    /// </param>
     List<RankedSegment> RankAndSelect(
         IReadOnlyList<SceneSegment> segments,
         IReadOnlyList<SubtitleEntry>? subtitles,
-        int maxReels = 5);
+        int maxReels = 5,
+        HashSet<string>? dynamicKeywords = null);
 }
