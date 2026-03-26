@@ -5,7 +5,7 @@ import { HashtagCard } from './HashtagCard';
 import { SubtitlePanel } from './SubtitlePanel';
 import { VideoPreview } from './VideoPreview';
 import { ViralScoreCard } from './ViralScoreCard';
-import { Sparkles, VolumeX } from 'lucide-react';
+import { Sparkles, VolumeX, Gift } from 'lucide-react';
 
 interface ResultsPanelProps {
   result: AnalysisResult;
@@ -13,9 +13,10 @@ interface ResultsPanelProps {
   userId: string;
   isPaidUser?: boolean;
   onUpgrade?: () => void;
+  onOpenReferral?: () => void;
 }
 
-export function ResultsPanel({ result, jobId, userId, isPaidUser = false, onUpgrade }: ResultsPanelProps) {
+export function ResultsPanel({ result, jobId, userId, isPaidUser = false, onUpgrade, onOpenReferral }: ResultsPanelProps) {
   return (
     <div>
       {/* Success banner */}
@@ -41,6 +42,32 @@ export function ResultsPanel({ result, jobId, userId, isPaidUser = false, onUpgr
           </p>
         </div>
       </div>
+
+      {/* Referral CTA */}
+      {onOpenReferral && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 12,
+          background: 'linear-gradient(135deg, #eef2ff, #fdf4ff)',
+          border: '1px solid #c7d2fe', borderRadius: 16,
+          padding: '12px 18px', marginBottom: 16,
+          flexWrap: 'wrap',
+        }}>
+          <Gift size={18} color="#7c3aed" />
+          <span style={{ fontSize: 13, fontWeight: 600, color: '#4f46e5', flex: 1 }}>
+            Loving it? Share BoostMyReel and earn free credits!
+          </span>
+          <button
+            onClick={onOpenReferral}
+            style={{
+              background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
+              color: 'white', border: 'none', borderRadius: 8,
+              padding: '6px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+            }}
+          >
+            View Rewards
+          </button>
+        </div>
+      )}
 
       {/* No-audio insight banner */}
       {!result.hasAudio && (

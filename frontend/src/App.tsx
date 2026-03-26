@@ -31,7 +31,11 @@ function App() {
   const isIdle = state === 'idle';
   const isWorking = state === 'uploading' || state === 'polling';
 
-  const [page, setPage] = useState<Page>('home');
+  const [page, setPage] = useState<Page>(() => {
+    const p = new URLSearchParams(window.location.search).get('page');
+    const validPages: Page[] = ['blog', 'blog-why-best', 'contact', 'image-analysis', 'auto-reel', 'payment'];
+    return validPages.includes(p as Page) ? (p as Page) : 'home';
+  });
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { userId, status, refresh: refreshUserStatus } = useUserStatus();
@@ -70,7 +74,12 @@ function App() {
 
   const scrollTo = (id: string) => {
     setMobileMenuOpen(false);
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+    if (!isIdle) {
+      reset();
+      setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' }), 50);
+    } else {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   const handleSelectPlan = (plan: Plan) => {
@@ -466,6 +475,7 @@ function App() {
                 userId={userId}
                 isPaidUser={isPaidUser}
                 onUpgrade={() => { reset(); setTimeout(() => scrollTo('pricing'), 150); }}
+                onOpenReferral={() => setShowReferral(true)}
               />
             </div>
           </section>
