@@ -370,6 +370,15 @@ function App() {
             }}>
               <Gift size={15} /> Refer Friends & Earn Credits
             </button>
+            {!isPaidUser && (
+              <button onClick={() => { setMobileMenuOpen(false); setShowRecover(true); }} style={{
+                display: 'flex', alignItems: 'center', gap: 8, width: '100%', textAlign: 'left',
+                background: 'none', border: 'none', cursor: 'pointer',
+                padding: '10px 0', fontSize: 15, fontWeight: 500, color: '#94a3b8',
+              }}>
+                Recover Access
+              </button>
+            )}
             {isPaidUser && (
               <div style={{
                 marginTop: 8, display: 'inline-flex', alignItems: 'center', gap: 6,
