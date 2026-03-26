@@ -70,7 +70,14 @@ function App() {
 
   const scrollTo = (id: string) => {
     setMobileMenuOpen(false);
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+    if (!isIdle) {
+      // Sections are hidden while a video is being processed/displayed.
+      // Reset to idle first so they become visible, then scroll.
+      reset();
+      setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' }), 50);
+    } else {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   const handleSelectPlan = (plan: Plan) => {
