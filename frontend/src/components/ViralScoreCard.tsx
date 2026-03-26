@@ -423,8 +423,15 @@ export function ViralScoreCard({
                   pointerEvents: isPaidUser ? 'auto' : 'none',
                   transition: 'filter 0.4s ease',
                 }}>
-                  {/* Scenario table */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
+                  {/* Scenario table — show 4 rows, scroll for more */}
+                  <div style={{
+                    display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10,
+                    maxHeight: 168,   /* ~4 rows × 42px */
+                    overflowY: 'auto',
+                    paddingRight: 2,
+                    scrollbarWidth: 'thin',
+                    scrollbarColor: 'rgba(6,182,212,0.3) transparent',
+                  }}>
                     {prediction.scenarios.map((s) => {
                       const tc = tierColor(s.tier);
                       return (
