@@ -73,6 +73,14 @@ public class ClaudeAIGenerationService : IAIGenerationService
         return ParseClaudeResponse(responseJson);
     }
 
+    // Evergreen high-volume hashtags that consistently trend on Reels/TikTok.
+    // Appended after Claude's niche tags to add a reach-boosting layer.
+    // Deduplicated so Claude can't accidentally double-add them.
+    private static readonly string[] EvergreenHashtags =
+    [
+        "reels", "viral", "explore", "trending", "fyp",
+    ];
+
     private static (string Hook, string Caption, List<string> Hashtags) ParseClaudeResponse(string responseJson)
     {
         var doc = JsonDocument.Parse(responseJson);
@@ -88,13 +96,20 @@ public class ClaudeAIGenerationService : IAIGenerationService
 
         var result = JsonDocument.Parse(text).RootElement;
 
-        var hook = result.GetProperty("hook").GetString() ?? "Watch this now!";
+        var hook    = result.GetProperty("hook").GetString()    ?? "Watch this now!";
         var caption = result.GetProperty("caption").GetString() ?? "Check this out!";
+
         var hashtags = result.GetProperty("hashtags")
             .EnumerateArray()
             .Select(h => h.GetString() ?? "")
             .Where(h => !string.IsNullOrWhiteSpace(h))
             .ToList();
+
+        // Append evergreen boosters that aren't already in Claude's list
+        var existing = hashtags.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var tag in EvergreenHashtags)
+            if (!existing.Contains(tag))
+                hashtags.Add(tag);
 
         return (hook, caption, hashtags);
     }
@@ -153,6 +168,55 @@ public class ClaudeAIGenerationService : IAIGenerationService
 
         var responseJson = await response.Content.ReadAsStringAsync(ct);
         return ParseViralScoreResponse(responseJson);
+    }
+
+    public async Task<HashSet<string>> ExtractViralKeywordsAsync(string fullTranscript, CancellationToken ct = default)
+    {
+        _logger.LogInformation("Extracting viral keywords from transcript via Claude");
+
+        // Truncate to avoid token waste — first 3000 chars is enough to understand the niche
+        var excerpt = fullTranscript.Length > 3000 ? fullTranscript[..3000] : fullTranscript;
+
+        var prompt = $"""
+            You are a viral short-form content expert.
+
+            Analyse this video transcript and return the 25 most engagement-triggering words or
+            short phrases that are SPECIFIC to this video's topic and audience niche.
+            These should be words that, when spoken in a segment, signal a high-value or
+            emotionally compelling moment (hooks, reveals, warnings, surprises, tips, mistakes).
+
+            Transcript excerpt:
+            {excerpt}
+
+            Return ONLY a comma-separated list of lowercase words/phrases. No explanation, no numbering.
+            Example format: secret,never do this,shocking,biggest mistake,wait for it
+            """;
+
+        var requestBody = new
+        {
+            model = _settings.Model,
+            max_tokens = 256,
+            messages = new[] { new { role = "user", content = prompt } }
+        };
+
+        var json     = JsonSerializer.Serialize(requestBody);
+        var content  = new StringContent(json, Encoding.UTF8, "application/json");
+        var response = await _http.PostAsync(_settings.Endpoint, content, ct);
+        response.EnsureSuccessStatusCode();
+
+        var responseJson = await response.Content.ReadAsStringAsync(ct);
+
+        var doc  = JsonDocument.Parse(responseJson);
+        var text = doc.RootElement
+            .GetProperty("content")[0]
+            .GetProperty("text")
+            .GetString() ?? string.Empty;
+
+        return text
+            .Split(',', StringSplitOptions.RemoveEmptyEntries)
+            .Select(w => w.Trim().ToLowerInvariant())
+            .Where(w => !string.IsNullOrWhiteSpace(w))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
     }
 
     private static ViralScoreResult ParseViralScoreResponse(string responseJson)

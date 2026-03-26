@@ -46,8 +46,11 @@ public class VideoController : ControllerBase
 
     /// <summary>
     /// Returns true when the user is allowed to start a new video job.
-    /// Paid users are always allowed. Free users get 1/day; referred users get 2 on their first day.
-    /// A null/empty userId is treated as a new anonymous free user.
+    /// Priority order:
+    ///   1. Paid users → always allowed
+    ///   2. Within free/referred daily limit → allowed
+    ///   3. Has Boost Credits → spend 1 credit to unlock the slot
+    ///   4. Otherwise → denied (429)
     /// </summary>
     private async Task<bool> IsWithinDailyLimitAsync(string? userId)
     {
@@ -63,7 +66,18 @@ public class VideoController : ControllerBase
         if (referral != null && referral.CreatedAt.Date == DateTime.UtcNow.Date)
             limit = 2;
 
-        return _limiter.TryConsume(userId, limit);
+        if (_limiter.TryConsume(userId, limit)) return true;
+
+        // Daily limit exhausted — spend 1 Boost Credit if available
+        if (userId == "anon") return false;
+        var credit = await _db.UserCredits.FindAsync(userId);
+        if (credit == null || credit.Balance <= 0) return false;
+
+        credit.Balance--;
+        credit.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+        _logger.LogInformation("User {UserId} spent 1 Boost Credit (balance now {Balance})", userId, credit.Balance);
+        return true;
     }
 
     [HttpPost("upload")]

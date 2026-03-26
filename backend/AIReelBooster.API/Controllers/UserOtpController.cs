@@ -102,16 +102,20 @@ public class UserOtpController : ControllerBase
 
     private static async Task SendOtpEmailAsync(string toEmail, string code)
     {
-        var host    = Environment.GetEnvironmentVariable("SMTP_HOST")    ?? throw new InvalidOperationException("SMTP_HOST not set");
-        var portStr = Environment.GetEnvironmentVariable("SMTP_PORT")    ?? "587";
-        var user    = Environment.GetEnvironmentVariable("SMTP_USER")    ?? throw new InvalidOperationException("SMTP_USER not set");
-        var pass    = Environment.GetEnvironmentVariable("SMTP_PASS")    ?? throw new InvalidOperationException("SMTP_PASS not set");
-        var from    = Environment.GetEnvironmentVariable("SMTP_FROM")    ?? user;
+        var host    = Environment.GetEnvironmentVariable("SMTP_HOST");
+        var portStr = Environment.GetEnvironmentVariable("SMTP_PORT") ?? "587";
+        var user    = Environment.GetEnvironmentVariable("SMTP_USER");
+        var pass    = Environment.GetEnvironmentVariable("SMTP_PASS");
+        var from    = Environment.GetEnvironmentVariable("SMTP_FROM") ?? user;
+
+        if (string.IsNullOrWhiteSpace(host) || string.IsNullOrWhiteSpace(user) || string.IsNullOrWhiteSpace(pass))
+            throw new InvalidOperationException("SMTP not configured — set SMTP_HOST, SMTP_USER, SMTP_PASS in Railway environment variables.");
 
         using var smtp = new SmtpClient(host, int.Parse(portStr))
         {
             Credentials = new NetworkCredential(user, pass),
             EnableSsl   = true,
+            Timeout     = 10_000,   // 10 s — fail fast so Railway doesn't kill the request
         };
 
         var body = $@"

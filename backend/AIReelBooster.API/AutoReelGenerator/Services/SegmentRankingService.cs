@@ -31,12 +31,16 @@ public class SegmentRankingService : ISegmentRankingService
     public List<RankedSegment> RankAndSelect(
         IReadOnlyList<SceneSegment> segments,
         IReadOnlyList<SubtitleEntry>? subtitles,
-        int maxReels = 5)
+        int maxReels = 5,
+        HashSet<string>? dynamicKeywords = null)
     {
         if (segments.Count == 0) return [];
 
+        // Use Claude-provided keywords when available, fall back to generic list
+        var keywords = dynamicKeywords is { Count: > 0 } ? dynamicKeywords : EngagementKeywords;
+
         // Score every segment
-        var scored = segments.Select(s => Score(s, subtitles)).ToList();
+        var scored = segments.Select(s => Score(s, subtitles, keywords)).ToList();
 
         // Sort descending by composite score
         scored.Sort((a, b) => b.CompositeScore.CompareTo(a.CompositeScore));
@@ -61,7 +65,10 @@ public class SegmentRankingService : ISegmentRankingService
 
     // ── Scoring ───────────────────────────────────────────────────────────────
 
-    private static RankedSegment Score(SceneSegment seg, IReadOnlyList<SubtitleEntry>? subtitles)
+    private static RankedSegment Score(
+        SceneSegment seg,
+        IReadOnlyList<SubtitleEntry>? subtitles,
+        HashSet<string> keywords)
     {
         var rs = new RankedSegment
         {
@@ -73,7 +80,7 @@ public class SegmentRankingService : ISegmentRankingService
 
         rs.MotionScore   = ComputeMotionScore(seg);
         rs.SpeechScore   = ComputeSpeechScore(seg, subtitles, out var snippet);
-        rs.KeywordScore  = ComputeKeywordScore(snippet);
+        rs.KeywordScore  = ComputeKeywordScore(snippet, keywords);
         rs.DurationScore = ComputeDurationScore(seg);
         rs.TranscriptSnippet = snippet;
 
@@ -119,17 +126,39 @@ public class SegmentRankingService : ISegmentRankingService
     }
 
     /// <summary>
-    /// Counts engagement keyword hits in the transcript snippet.
-    /// 3 or more keyword hits → maximum score.
+    /// Scores keyword presence with position weighting:
+    ///   - Hook zone (first 3 words) and cliffhanger zone (last 3 words) count 2×
+    ///   - Body words count 1×
+    /// 5 weighted hits → maximum score.
+    /// Accepts the active keyword set (dynamic from Claude or hardcoded fallback).
     /// </summary>
-    private static double ComputeKeywordScore(string? snippet)
+    private static double ComputeKeywordScore(string? snippet, HashSet<string> keywords)
     {
         if (string.IsNullOrWhiteSpace(snippet)) return 0.0;
 
         var words = snippet.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        var hits  = words.Count(w => EngagementKeywords.Contains(w));
+        if (words.Length == 0) return 0.0;
 
-        return Math.Min(hits / 3.0 * 100.0, 100.0);
+        // Segments that are multi-word phrases in the keyword list (e.g. "never do this")
+        // are matched by checking if the snippet contains the phrase as a substring.
+        double phraseBonus = keywords
+            .Where(k => k.Contains(' ') && snippet.Contains(k, StringComparison.OrdinalIgnoreCase))
+            .Count() * 2.0;
+
+        // Position-weighted single-word scoring
+        var hookZone        = words.Take(3).ToArray();
+        var cliffhangerZone = words.TakeLast(3).ToArray();
+        var bodyZone        = words.Skip(3).SkipLast(3).ToArray();
+
+        var hookHits        = hookZone.Count(w => keywords.Contains(w));
+        var cliffHits       = cliffhangerZone.Count(w => keywords.Contains(w));
+        var bodyHits        = bodyZone.Count(w => keywords.Contains(w));
+
+        // Hook + cliffhanger hits count 2× because position is high-value
+        var weightedHits = hookHits * 2.0 + cliffHits * 2.0 + bodyHits * 1.0 + phraseBonus;
+
+        // 5 weighted hits = 100 pts
+        return Math.Min(weightedHits / 5.0 * 100.0, 100.0);
     }
 
     /// <summary>
