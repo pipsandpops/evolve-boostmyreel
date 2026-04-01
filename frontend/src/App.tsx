@@ -549,7 +549,7 @@ function App() {
         </div>
       </footer>
 
-      <AgentChat userId={userId} currentJobId={state === 'complete' ? jobId : null} />
+      <AgentChat userId={userId} isPaidUser={isPaidUser} currentJobId={state === 'complete' ? jobId : null} />
     </div>
   );
 }
