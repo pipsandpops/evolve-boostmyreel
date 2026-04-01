@@ -10,6 +10,7 @@ interface Props {
 export function BattleChallengePage({ userId, onBack }: Props) {
   const [handle, setHandle]       = useState('');
   const [trashTalk, setTrashTalk] = useState('');
+  const [prize, setPrize]         = useState('');
   const [email, setEmail]         = useState('');
   const [loading, setLoading]     = useState(false);
   const [error, setError]         = useState<string | null>(null);
@@ -21,7 +22,7 @@ export function BattleChallengePage({ userId, onBack }: Props) {
     setError(null);
     setLoading(true);
     try {
-      const res = await api.createChallenge(userId, handle.trim(), trashTalk || undefined, email || undefined);
+      const res = await api.createChallenge(userId, handle.trim(), trashTalk || undefined, email || undefined, prize || undefined);
       setResult(res);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create challenge.');
@@ -47,6 +48,13 @@ export function BattleChallengePage({ userId, onBack }: Props) {
           <p className="text-slate-400 mb-6">
             @{handle.replace('@', '')} has <strong className="text-purple-400">{expiresIn}h</strong> to accept.
           </p>
+
+          {result.prizeDescription && (
+            <div className="bg-yellow-900/30 border border-yellow-500/30 rounded-xl p-3 mb-3 flex items-center gap-2">
+              <span className="text-lg">🏆</span>
+              <span className="text-yellow-300 font-semibold text-sm">Prize: {result.prizeDescription}</span>
+            </div>
+          )}
 
           {result.trashTalkMsg && (
             <div className="bg-purple-900/40 border border-purple-500/30 rounded-xl p-3 mb-6 text-purple-200 italic text-sm">
@@ -114,6 +122,21 @@ export function BattleChallengePage({ userId, onBack }: Props) {
               onChange={e => setHandle(e.target.value)}
               className="w-full bg-slate-700 border border-slate-600 focus:border-purple-500 text-white placeholder-slate-400 rounded-xl px-4 py-3 outline-none transition-colors"
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-1">
+              🏆 Prize <span className="text-slate-500">(optional, e.g. "₹500 via UPI" or "Shoutout to 10K followers")</span>
+            </label>
+            <input
+              type="text"
+              placeholder="What does the winner get?"
+              maxLength={100}
+              value={prize}
+              onChange={e => setPrize(e.target.value)}
+              className="w-full bg-slate-700 border border-slate-600 focus:border-yellow-500 text-white placeholder-slate-400 rounded-xl px-4 py-3 outline-none transition-colors"
+            />
+            <p className="text-xs text-slate-500 mt-1 text-right">{prize.length}/100</p>
           </div>
 
           <div>

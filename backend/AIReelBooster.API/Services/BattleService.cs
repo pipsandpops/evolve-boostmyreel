@@ -31,7 +31,7 @@ public class BattleService : IBattleService
     // ── Challenge ─────────────────────────────────────────────────────────────
 
     public async Task<BattleChallenge> CreateChallengeAsync(
-        string challengerId, string opponentHandle, string? trashTalk, string? opponentEmail,
+        string challengerId, string opponentHandle, string? trashTalk, string? opponentEmail, string? prizeDescription,
         CancellationToken ct = default)
     {
         var handle = opponentHandle.TrimStart('@').ToLowerInvariant();
@@ -39,13 +39,17 @@ public class BattleService : IBattleService
         if (trashTalk?.Length > 100)
             trashTalk = trashTalk[..100];
 
+        var prize = prizeDescription?.Trim();
+        if (prize?.Length > 100) prize = prize[..100];
+
         var challenge = new BattleChallenge
         {
-            ChallengerId   = challengerId,
-            OpponentHandle = handle,
-            OpponentEmail  = opponentEmail?.Trim().ToLowerInvariant(),
-            TrashTalkMsg   = trashTalk,
-            ExpiresAt      = DateTime.UtcNow.AddHours(24),
+            ChallengerId     = challengerId,
+            OpponentHandle   = handle,
+            OpponentEmail    = opponentEmail?.Trim().ToLowerInvariant(),
+            TrashTalkMsg     = trashTalk,
+            PrizeDescription = prize,
+            ExpiresAt        = DateTime.UtcNow.AddHours(24),
         };
 
         _db.BattleChallenges.Add(challenge);

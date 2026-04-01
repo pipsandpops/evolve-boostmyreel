@@ -11,6 +11,7 @@ public class BattleChallenge
     public string OpponentHandle   { get; set; } = string.Empty;   // @instagram
     public string? OpponentEmail   { get; set; }
     public string? TrashTalkMsg    { get; set; }                    // max 100 chars
+    public string? PrizeDescription { get; set; }                   // e.g. "₹500 via UPI" — max 100 chars
     public ChallengeStatus Status  { get; set; } = ChallengeStatus.Pending;
     public string? BattleId        { get; set; }                    // set on Accept
     public DateTime CreatedAt      { get; set; } = DateTime.UtcNow;

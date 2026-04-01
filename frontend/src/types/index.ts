@@ -242,6 +242,7 @@ export interface CreateChallengeResponse {
   instagramDmLink: string;
   expiresAt: string;
   trashTalkMsg: string | null;
+  prizeDescription: string | null;
 }
 
 export interface ChallengeStatus {
@@ -250,6 +251,7 @@ export interface ChallengeStatus {
   battleId: string | null;
   opponentHandle: string;
   trashTalkMsg: string | null;
+  prizeDescription: string | null;
   status: 'Pending' | 'Accepted' | 'Declined' | 'Expired';
   expiresAt: string;
 }

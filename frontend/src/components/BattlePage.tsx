@@ -38,10 +38,12 @@ function ScoreBar({ label, value, max }: { label: string; value: number; max: nu
 function BattleArena({
   battleId,
   userId,
+  prize,
   onBack,
 }: {
   battleId: string;
   userId: string;
+  prize?: string | null;
   onBack: () => void;
 }) {
   const [scores, setScores]           = useState<BattleScoreResult['battle'] | null>(null);
@@ -153,6 +155,17 @@ function BattleArena({
           {status === 'Active' ? `⏱ ${formatTime(timeLeftSeconds)}` : `✓ ${status}`}
         </div>
       </div>
+
+      {/* Prize banner */}
+      {prize && (
+        <div className="bg-yellow-900/30 border border-yellow-500/30 rounded-2xl p-3 flex items-center gap-3">
+          <span className="text-2xl">🏆</span>
+          <div>
+            <p className="text-yellow-300 font-bold text-sm">Prize at Stake</p>
+            <p className="text-yellow-200 text-sm">{prize}</p>
+          </div>
+        </div>
+      )}
 
       {/* Score cards */}
       <div className="grid grid-cols-2 gap-4">
@@ -289,6 +302,7 @@ function BattleArena({
 export function BattlePage({ userId, challengeId: initialChallengeId, onBack }: Props) {
   const [view, setView]               = useState<View>(initialChallengeId ? 'battle' : 'home');
   const [activeBattleId, setActiveBattleId] = useState<string | null>(null);
+  const [activePrize, setActivePrize]       = useState<string | null>(null);
   const [leaderboard, setLeaderboard] = useState<BattleSummary[]>([]);
   const [loadingLb, setLoadingLb]     = useState(true);
   const [pendingChallenge, setPendingChallenge] = useState<ChallengeStatus | null>(null);
@@ -299,7 +313,9 @@ export function BattlePage({ userId, challengeId: initialChallengeId, onBack }: 
     if (!initialChallengeId) return;
     api.getBattle(initialChallengeId).then(res => {
       if (res.type === 'challenge') {
-        setPendingChallenge(res as ChallengeStatus);
+        const c = res as ChallengeStatus;
+        setPendingChallenge(c);
+        setActivePrize(c.prizeDescription ?? null);
       } else {
         const battle = (res as BattleScoreResult).battle;
         setActiveBattleId(battle.battleId);
@@ -320,6 +336,7 @@ export function BattlePage({ userId, challengeId: initialChallengeId, onBack }: 
     try {
       const res = await api.acceptChallenge(pendingChallenge.challengeId, userId);
       setActiveBattleId(res.battleId);
+      setActivePrize(pendingChallenge.prizeDescription ?? null);
       setPendingChallenge(null);
       setView('battle');
     } catch (err) {
@@ -356,6 +373,12 @@ export function BattlePage({ userId, challengeId: initialChallengeId, onBack }: 
             <p className="text-slate-300 mb-2">
               @{pendingChallenge.opponentHandle} challenges you to a 24hr Reel Battle
             </p>
+            {pendingChallenge.prizeDescription && (
+              <div className="inline-flex items-center gap-2 bg-yellow-900/30 border border-yellow-500/30 rounded-xl px-4 py-2 mb-3">
+                <span>🏆</span>
+                <span className="text-yellow-300 font-semibold text-sm">Prize: {pendingChallenge.prizeDescription}</span>
+              </div>
+            )}
             {pendingChallenge.trashTalkMsg && (
               <p className="text-purple-300 italic text-sm mb-4">"{pendingChallenge.trashTalkMsg}"</p>
             )}
@@ -381,7 +404,8 @@ export function BattlePage({ userId, challengeId: initialChallengeId, onBack }: 
           <BattleArena
             battleId={activeBattleId}
             userId={userId}
-            onBack={() => { setView('home'); setActiveBattleId(null); }}
+            prize={activePrize}
+            onBack={() => { setView('home'); setActiveBattleId(null); setActivePrize(null); }}
           />
         ) : (
           <>
@@ -419,7 +443,7 @@ export function BattlePage({ userId, challengeId: initialChallengeId, onBack }: 
                     return (
                       <button
                         key={battle.battleId}
-                        onClick={() => { setActiveBattleId(battle.battleId); setView('battle'); }}
+                        onClick={() => { setActiveBattleId(battle.battleId); setActivePrize(null); setView('battle'); }}
                         className="w-full bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700 hover:border-purple-500/40 rounded-2xl p-4 text-left transition-all"
                       >
                         <div className="flex items-center justify-between mb-3">

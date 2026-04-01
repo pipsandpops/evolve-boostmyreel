@@ -33,7 +33,7 @@ public class BattleController : ControllerBase
         try
         {
             var challenge = await _battles.CreateChallengeAsync(
-                req.ChallengerId, req.OpponentHandle, req.TrashTalkMsg, req.OpponentEmail, ct);
+                req.ChallengerId, req.OpponentHandle, req.TrashTalkMsg, req.OpponentEmail, req.PrizeDescription, ct);
 
             var battleLink = $"{_frontendBase}/battle/{challenge.Id}";
             var waText     = Uri.EscapeDataString(
@@ -45,8 +45,9 @@ public class BattleController : ControllerBase
                 battleLink,
                 whatsappLink  = $"https://wa.me/?text={waText}",
                 instagramDmLink = $"https://ig.me/m/{req.OpponentHandle.TrimStart('@')}",
-                expiresAt     = challenge.ExpiresAt,
-                trashTalkMsg  = challenge.TrashTalkMsg,
+                expiresAt        = challenge.ExpiresAt,
+                trashTalkMsg     = challenge.TrashTalkMsg,
+                prizeDescription = challenge.PrizeDescription,
             });
         }
         catch (Exception ex)
@@ -72,8 +73,9 @@ public class BattleController : ControllerBase
                 battleId      = challenge.BattleId,
                 opponentHandle = challenge.OpponentHandle,
                 trashTalkMsg  = challenge.TrashTalkMsg,
-                status        = challenge.Status.ToString(),
-                expiresAt     = challenge.ExpiresAt,
+                status           = challenge.Status.ToString(),
+                expiresAt        = challenge.ExpiresAt,
+                prizeDescription = challenge.PrizeDescription,
             });
         }
 
@@ -202,7 +204,7 @@ public class BattleController : ControllerBase
 
 // ── Request models ────────────────────────────────────────────────────────────
 
-public record CreateChallengeRequest(string ChallengerId, string OpponentHandle, string? TrashTalkMsg, string? OpponentEmail);
+public record CreateChallengeRequest(string ChallengerId, string OpponentHandle, string? TrashTalkMsg, string? OpponentEmail, string? PrizeDescription);
 public record AcceptChallengeRequest(string OpponentUserId);
 public record SubmitEntryRequest(string UserId, string ReelUrl, string? InstagramHandle);
 public record ManualMetricRequest(string UserId, string EntryId, long Views, long Likes, long Comments, long Saves, long Shares, long Followers);
