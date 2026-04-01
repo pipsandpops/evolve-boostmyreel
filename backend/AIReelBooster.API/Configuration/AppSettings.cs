@@ -143,5 +143,5 @@ public class InstagramSettings
     public string RedirectUri     { get; set; } = string.Empty;
 
     /// <summary>Frontend URL to redirect to after OAuth completes (e.g. https://your-app.vercel.app)</summary>
-    public string FrontendBaseUrl { get; set; } = "http://localhost:5173";
+    public string FrontendBaseUrl { get; set; } = "https://boostmyreel.com";
 }
