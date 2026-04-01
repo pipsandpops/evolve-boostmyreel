@@ -233,6 +233,70 @@ export interface ReelResult {
 
 // ── AI Agent Chat ──────────────────────────────────────────────────────────────
 
+// ── Reel Streak Battle ─────────────────────────────────────────────────────────
+
+export interface CreateChallengeResponse {
+  challengeId: string;
+  battleLink: string;
+  whatsappLink: string;
+  instagramDmLink: string;
+  expiresAt: string;
+  trashTalkMsg: string | null;
+}
+
+export interface ChallengeStatus {
+  type: 'challenge';
+  challengeId: string;
+  battleId: string | null;
+  opponentHandle: string;
+  trashTalkMsg: string | null;
+  status: 'Pending' | 'Accepted' | 'Declined' | 'Expired';
+  expiresAt: string;
+}
+
+export interface CreatorScore {
+  userId: string;
+  handle: string;
+  score: number;
+  deltaViews: number;
+  deltaLikes: number;
+  deltaComments: number;
+  deltaSaves: number;
+  deltaShares: number;
+  deltaFollowers: number;
+  metricSource: string;
+}
+
+export interface AudienceVoteTally {
+  challengerEntryId: string;
+  challengerVotes: number;
+  opponentEntryId: string;
+  opponentVotes: number;
+}
+
+export interface BattleScoreResult {
+  type: 'battle';
+  battle: {
+    battleId: string;
+    status: string;
+    endsAt: string;
+    timeLeftSeconds: number;
+    challenger: CreatorScore;
+    opponent: CreatorScore;
+    audienceVotes: AudienceVoteTally;
+  };
+}
+
+export interface BattleSummary {
+  battleId: string;
+  challengerHandle: string;
+  opponentHandle: string;
+  challengerScore: number;
+  opponentScore: number;
+  status: string;
+  endsAt: string;
+}
+
 export interface AgentMessage {
   role: 'user' | 'assistant';
   content: string;
