@@ -285,6 +285,9 @@ function App() {
             <button onClick={() => { setPage('auto-reel'); window.scrollTo(0, 0); }} className="nav-tool-btn" style={{ color: '#db2777' }}>
               <Clapperboard size={14} /> Reels
             </button>
+            <button onClick={() => { setPage('battle'); window.scrollTo(0, 0); }} className="nav-tool-btn" style={{ color: '#f59e0b' }}>
+              ⚔️ Battle
+            </button>
           </div>
 
           {/* Right actions */}
@@ -385,6 +388,13 @@ function App() {
               padding: '10px 0', fontSize: 15, fontWeight: 600, color: '#db2777',
             }}>
               <Clapperboard size={15} /> Auto Reel Generator
+            </button>
+            <button onClick={() => { setMobileMenuOpen(false); setPage('battle'); window.scrollTo(0, 0); }} style={{
+              display: 'flex', alignItems: 'center', gap: 8, width: '100%', textAlign: 'left',
+              background: 'none', border: 'none', cursor: 'pointer',
+              padding: '10px 0', fontSize: 15, fontWeight: 600, color: '#f59e0b',
+            }}>
+              ⚔️ Reel Battles
             </button>
             <button onClick={() => { setMobileMenuOpen(false); setShowReferral(true); }} style={{
               display: 'flex', alignItems: 'center', gap: 8, width: '100%', textAlign: 'left',
@@ -558,6 +568,12 @@ function App() {
                 fontSize: 13, color: '#64748b', fontWeight: 500, padding: 0,
               }}>
                 Our Story
+              </button>
+              <button onClick={() => { setPage('battle'); window.scrollTo(0, 0); }} style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                fontSize: 13, color: '#f59e0b', fontWeight: 600, padding: 0,
+              }}>
+                ⚔️ Battles
               </button>
             </div>
             <p style={{ color: '#94a3b8', fontSize: 12, margin: 0 }}>
