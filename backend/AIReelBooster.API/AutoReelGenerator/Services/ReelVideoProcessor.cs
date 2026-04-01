@@ -52,15 +52,19 @@ public class ReelVideoProcessor : IReelVideoProcessor
 
         // Re-encode (not stream-copy) so the SRT subtitle timings in the next
         // step are frame-accurate relative to the clip start.
-        var args = $"-y -ss {start.TotalSeconds.ToString("F3", System.Globalization.CultureInfo.InvariantCulture)} "
-                 + $"-i \"{sourceVideoPath}\" "
-                 + $"-t {duration.TotalSeconds.ToString("F3", System.Globalization.CultureInfo.InvariantCulture)} "
-                 + $"-c:v libx264 -preset {_settings.OutputPreset} -crf {_settings.OutputCrf} "
-                 + "-c:a aac -b:a 128k "
-                 + "-threads 2 "
-                 + $"\"{outputPath}\"";
+        var args = new[]
+        {
+            "-y",
+            "-ss", start.TotalSeconds.ToString("F3", System.Globalization.CultureInfo.InvariantCulture),
+            "-i", sourceVideoPath,
+            "-t", duration.TotalSeconds.ToString("F3", System.Globalization.CultureInfo.InvariantCulture),
+            "-c:v", "libx264", "-preset", _settings.OutputPreset, "-crf", _settings.OutputCrf.ToString(),
+            "-c:a", "aac", "-b:a", "128k",
+            "-threads", "2",
+            outputPath,
+        };
 
-        _logger.LogDebug("ExtractClip: {Args}", args);
+        _logger.LogDebug("ExtractClip: {Args}", string.Join(" ", args));
         await RunAndCheckAsync(ffmpegExe, args, ct);
         return outputPath;
     }
@@ -99,26 +103,40 @@ public class ReelVideoProcessor : IReelVideoProcessor
         {
             tempSrt = await WriteTempSrtAsync(outputDir, subtitles, clipStartOffset, ct);
 
-            // FFmpeg subtitles filter requires forward-slashes and escaped colons on Windows
+            // On Windows the path needs forward-slashes and escaped colons.
+            // On Linux the path has no colons so the replace is a no-op.
+            // Commas inside force_style must be escaped as \, so FFmpeg's
+            // filter-chain parser does not split on them.
             var escapedSrt = tempSrt
                 .Replace("\\", "/")
                 .Replace(":", "\\:");
 
-            videoFilter += $",subtitles='{escapedSrt}':force_style="
-                         + "'FontName=Arial,FontSize=18,"
-                         + "PrimaryColour=&H00FFFFFF,"
-                         + "OutlineColour=&H00000000,"
-                         + "Outline=2,Alignment=2'";
+            videoFilter += $",subtitles='{escapedSrt}'"
+                         + ":force_style="
+                         + "FontName=Arial\\,"
+                         + "FontSize=18\\,"
+                         + "PrimaryColour=&H00FFFFFF\\,"
+                         + "OutlineColour=&H00000000\\,"
+                         + "Outline=2\\,"
+                         + "Alignment=2";
         }
 
-        var args = $"-y -i \"{clipPath}\" "
-                 + $"-vf \"{videoFilter}\" "
-                 + $"-c:v libx264 -preset {_settings.OutputPreset} -crf {_settings.OutputCrf} "
-                 + "-c:a aac -b:a 128k "
-                 + "-threads 2 "
-                 + $"-r 30 \"{outputPath}\"";
+        // Use ArgumentList so each value is passed verbatim to FFmpeg with no
+        // shell-level quoting. This avoids .NET's Arguments parser mishandling
+        // the single-quoted SRT path on Linux.
+        var args = new[]
+        {
+            "-y",
+            "-i", clipPath,
+            "-vf", videoFilter,
+            "-c:v", "libx264", "-preset", _settings.OutputPreset, "-crf", _settings.OutputCrf.ToString(),
+            "-c:a", "aac", "-b:a", "128k",
+            "-threads", "2",
+            "-r", "30",
+            outputPath,
+        };
 
-        _logger.LogDebug("ConvertToVertical: {Args}", args);
+        _logger.LogDebug("ConvertToVertical: {Args}", string.Join(" ", args));
 
         try
         {
@@ -171,18 +189,19 @@ public class ReelVideoProcessor : IReelVideoProcessor
 
     // ── Process runner ────────────────────────────────────────────────────────
 
-    private static async Task RunAndCheckAsync(string exe, string args, CancellationToken ct)
+    private static async Task RunAndCheckAsync(string exe, string[] args, CancellationToken ct)
     {
         using var proc = new Process();
         proc.StartInfo = new ProcessStartInfo
         {
             FileName               = exe,
-            Arguments              = args,
             RedirectStandardOutput = true,
             RedirectStandardError  = true,
             UseShellExecute        = false,
             CreateNoWindow         = true,
         };
+        foreach (var arg in args)
+            proc.StartInfo.ArgumentList.Add(arg);
         proc.Start();
 
         // Read both streams concurrently to prevent deadlock on large stderr
