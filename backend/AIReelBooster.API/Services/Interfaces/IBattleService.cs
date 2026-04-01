@@ -5,7 +5,7 @@ namespace AIReelBooster.API.Services.Interfaces;
 public interface IBattleService
 {
     // Challenge lifecycle
-    Task<BattleChallenge> CreateChallengeAsync(string challengerId, string opponentHandle, string? trashTalk, string? opponentEmail, CancellationToken ct = default);
+    Task<BattleChallenge> CreateChallengeAsync(string challengerId, string opponentHandle, string? trashTalk, string? opponentEmail, string? prizeDescription, CancellationToken ct = default);
     Task<Battle> AcceptChallengeAsync(string challengeId, string opponentUserId, CancellationToken ct = default);
     Task DeclineChallengeAsync(string challengeId, CancellationToken ct = default);
     Task<BattleChallenge?> GetChallengeAsync(string challengeId, CancellationToken ct = default);

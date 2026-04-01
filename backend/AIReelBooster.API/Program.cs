@@ -160,6 +160,9 @@ using (var scope = app.Services.CreateScope())
     // Add Email column to UserPlans if not exists (safe for existing DBs)
     try { db.Database.ExecuteSqlRaw("ALTER TABLE UserPlans ADD COLUMN Email TEXT"); } catch { /* already exists */ }
 
+    // Add PrizeDescription to BattleChallenges if not exists
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE BattleChallenges ADD COLUMN PrizeDescription TEXT"); } catch { /* already exists */ }
+
     // ── Battle tables ────────────────────────────────────────────────────────
     db.Database.ExecuteSqlRaw("""
         CREATE TABLE IF NOT EXISTS BattleChallenges (

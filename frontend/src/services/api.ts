@@ -310,11 +310,12 @@ export const api = {
     opponentHandle: string,
     trashTalkMsg?: string,
     opponentEmail?: string,
+    prizeDescription?: string,
   ): Promise<CreateChallengeResponse> {
     return request<CreateChallengeResponse>('/battle/challenge', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ challengerId, opponentHandle, trashTalkMsg, opponentEmail }),
+      body: JSON.stringify({ challengerId, opponentHandle, trashTalkMsg, opponentEmail, prizeDescription }),
     });
   },
 
