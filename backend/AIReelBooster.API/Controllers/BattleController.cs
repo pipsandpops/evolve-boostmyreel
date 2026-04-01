@@ -1,5 +1,7 @@
+using AIReelBooster.API.Configuration;
 using AIReelBooster.API.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 
 namespace AIReelBooster.API.Controllers;
 
@@ -9,11 +11,13 @@ public class BattleController : ControllerBase
 {
     private readonly IBattleService _battles;
     private readonly ILogger<BattleController> _logger;
+    private readonly string _frontendBase;
 
-    public BattleController(IBattleService battles, ILogger<BattleController> logger)
+    public BattleController(IBattleService battles, ILogger<BattleController> logger, IOptions<AppSettings> settings)
     {
-        _battles = battles;
-        _logger  = logger;
+        _battles      = battles;
+        _logger       = logger;
+        _frontendBase = settings.Value.Instagram.FrontendBaseUrl.TrimEnd('/');
     }
 
     // ── POST /api/battle/challenge ────────────────────────────────────────────
@@ -31,8 +35,7 @@ public class BattleController : ControllerBase
             var challenge = await _battles.CreateChallengeAsync(
                 req.ChallengerId, req.OpponentHandle, req.TrashTalkMsg, req.OpponentEmail, ct);
 
-            var baseUrl    = $"{Request.Scheme}://{Request.Host}";
-            var battleLink = $"{baseUrl}/battle/{challenge.Id}";
+            var battleLink = $"{_frontendBase}/battle/{challenge.Id}";
             var waText     = Uri.EscapeDataString(
                 $"⚔️ You've been challenged to a 24hr Reel Battle! Accept or forfeit 😏\n{battleLink}");
 
