@@ -1,6 +1,5 @@
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Nodes;
 using AIReelBooster.API.Configuration;
 using AIReelBooster.API.Infrastructure;
 using AIReelBooster.API.Models.Requests;
@@ -291,13 +290,13 @@ public class ClaudeAgentService : IAgentService
                     return ("""{"acknowledged":true}""", null);
 
                 default:
-                    return ($"""{{ "error": "Unknown tool: {toolName}" }}""", null);
+                    return (JsonSerializer.Serialize(new { error = $"Unknown tool: {toolName}" }), null);
             }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Tool execution failed for {Tool}", toolName);
-            return ($"""{{ "error": "{ex.Message.Replace("\"", "'")}" }}""", null);
+            return (JsonSerializer.Serialize(new { error = ex.Message }), null);
         }
     }
 }
