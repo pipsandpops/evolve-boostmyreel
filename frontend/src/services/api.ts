@@ -1,4 +1,6 @@
 import type {
+  AgentChatResponse,
+  AgentMessage,
   AnalysisResult,
   BurnSubtitlesResponse,
   ImageAnalysisResult,
@@ -285,6 +287,16 @@ export const api = {
 
   getImageResult(jobId: string): Promise<ImageAnalysisResult> {
     return request<ImageAnalysisResult>(`/image/${jobId}/result`);
+  },
+
+  // ── AI Agent ──────────────────────────────────────────────────────────────────
+
+  agentChat(messages: AgentMessage[], userId?: string): Promise<AgentChatResponse> {
+    return request<AgentChatResponse>('/agent/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages, userId }),
+    });
   },
 
   // ── Referral ─────────────────────────────────────────────────────────────────

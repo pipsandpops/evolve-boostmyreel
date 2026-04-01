@@ -16,6 +16,7 @@ import { BlogPage } from './components/BlogPage';
 import { BlogWhyBest } from './components/BlogWhyBest';
 import { ReferralPanel } from './components/ReferralPanel';
 import { RecoverAccessModal } from './components/RecoverAccessModal';
+import { AgentChat } from './components/AgentChat';
 import { AdminPage } from './components/AdminPage';
 import { Sparkles, RotateCcw, Zap, FileText, Hash, Captions, Menu, X, ImagePlus, Clapperboard, BookOpen, Crown, Gift } from 'lucide-react';
 
@@ -548,6 +549,7 @@ function App() {
         </div>
       </footer>
 
+      <AgentChat userId={userId} currentJobId={state === 'complete' ? jobId : null} />
     </div>
   );
 }
