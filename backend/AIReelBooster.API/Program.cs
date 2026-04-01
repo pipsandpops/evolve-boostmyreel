@@ -59,6 +59,7 @@ builder.Services.AddScoped<IVideoProcessingService, VideoProcessingService>();
 // HTTP clients for external APIs
 builder.Services.AddHttpClient<ITranscriptionService, WhisperTranscriptionService>();
 builder.Services.AddHttpClient<IAIGenerationService, ClaudeAIGenerationService>();
+builder.Services.AddHttpClient<IAgentService, ClaudeAgentService>();
 
 // Background workers
 builder.Services.AddHostedService<VideoProcessingWorker>();

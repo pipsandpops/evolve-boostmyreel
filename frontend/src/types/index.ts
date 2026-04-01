@@ -230,3 +230,21 @@ export interface ReelResult {
   unlockedCount: number;
   reels: GeneratedReel[];
 }
+
+// ── AI Agent Chat ──────────────────────────────────────────────────────────────
+
+export interface AgentMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+export interface AgentToolCall {
+  toolName: string;
+  input: unknown;
+  output: unknown;
+}
+
+export interface AgentChatResponse {
+  reply: string;
+  toolCalls?: AgentToolCall[];
+}
