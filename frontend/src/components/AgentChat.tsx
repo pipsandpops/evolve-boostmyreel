@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, KeyboardEvent } from 'react';
+import { useState, useRef, useEffect, type KeyboardEvent } from 'react';
 import { MessageCircle, X, Send, Loader, Wrench } from 'lucide-react';
 import { useAgentChat, type ChatEntry } from '../hooks/useAgentChat';
 
