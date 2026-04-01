@@ -61,12 +61,19 @@ function BattleArena({
     try {
       const data = await api.getBattleScores(battleId);
       setScores(data);
+      // Restore entryId from scores so the metrics form survives a page refresh
+      if (!entryId) {
+        if (data.challenger.userId === userId && data.audienceVotes.challengerEntryId)
+          setEntryId(data.audienceVotes.challengerEntryId);
+        else if (data.opponent.userId === userId && data.audienceVotes.opponentEntryId)
+          setEntryId(data.audienceVotes.opponentEntryId);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load battle.');
     } finally {
       setLoading(false);
     }
-  }, [battleId]);
+  }, [battleId, userId, entryId]);
 
   useEffect(() => {
     load();
@@ -154,8 +161,10 @@ function BattleArena({
           <div key={i} className="bg-slate-800/60 border border-slate-700 rounded-2xl p-4">
             <div className="flex items-center justify-between mb-3">
               <div>
-                <p className="text-white font-bold">@{score.handle || score.userId.slice(0, 8)}</p>
-                <p className="text-xs text-slate-400">{score.metricSource}</p>
+                <p className="text-white font-bold">@{score.handle || `user_${score.userId.slice(0, 6)}`}</p>
+                <p className="text-xs text-slate-400">
+                  {score.metricSource === 'none' ? 'awaiting metrics' : `via ${score.metricSource}`}
+                </p>
               </div>
               <div className="text-right">
                 <p className="text-2xl font-bold text-purple-400">{score.score.toFixed(0)}</p>
@@ -195,8 +204,8 @@ function BattleArena({
         <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-2xl p-4 text-center">
           <p className="text-yellow-400 font-bold text-lg">
             🏆 Winner: @{challenger.score >= opponent.score
-              ? (challenger.handle || challenger.userId.slice(0, 8))
-              : (opponent.handle   || opponent.userId.slice(0, 8))}
+              ? (challenger.handle || `user_${challenger.userId.slice(0, 6)}`)
+              : (opponent.handle   || `user_${opponent.userId.slice(0, 6)}`)}
           </p>
         </div>
       )}
@@ -231,11 +240,23 @@ function BattleArena({
         </div>
       )}
 
+      {/* How scoring works — always visible to participants */}
+      {isParticipant && status === 'Active' && (
+        <div className="bg-blue-900/20 border border-blue-500/20 rounded-2xl p-4">
+          <p className="text-blue-300 text-sm font-semibold mb-1">📊 How scoring works</p>
+          <p className="text-slate-400 text-xs leading-relaxed">
+            Scores are based on the <strong className="text-slate-300">growth since you submitted</strong> — not the total numbers.
+            Open your Instagram Reel, check your current stats, and enter them below.
+            The app calculates the delta automatically. Update every few hours to keep your score live.
+          </p>
+        </div>
+      )}
+
       {/* Manual metrics */}
       {isParticipant && status === 'Active' && myEntry && (
         <div className="bg-slate-800/60 border border-slate-700 rounded-2xl p-5">
-          <h3 className="text-white font-semibold mb-1">Update Metrics</h3>
-          <p className="text-xs text-slate-400 mb-3">Max 2 updates per 4 hours</p>
+          <h3 className="text-white font-semibold mb-1">📈 Update Your Metrics</h3>
+          <p className="text-xs text-slate-400 mb-3">Enter your <strong>current</strong> Instagram stats — max 2 updates per 4 hours</p>
           <div className="grid grid-cols-3 gap-2 mb-3">
             {(['views','likes','comments','saves','shares','followers'] as const).map(k => (
               <div key={k}>
@@ -403,9 +424,9 @@ export function BattlePage({ userId, challengeId: initialChallengeId, onBack }: 
                       >
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2">
-                            <span className="text-white font-semibold">@{battle.challengerHandle || 'creator'}</span>
+                            <span className="text-white font-semibold">@{battle.challengerHandle || `user_${battle.battleId.slice(0, 5)}`}</span>
                             <span className="text-slate-400 text-sm">vs</span>
-                            <span className="text-white font-semibold">@{battle.opponentHandle || 'creator'}</span>
+                            <span className="text-white font-semibold">@{battle.opponentHandle || `user_${battle.battleId.slice(5, 10)}`}</span>
                           </div>
                           <span className={`text-xs px-2 py-1 rounded-full ${battle.status === 'Active' ? 'bg-green-500/20 text-green-400' : 'bg-slate-600/40 text-slate-400'}`}>
                             {battle.status === 'Active' ? formatTime(timeLeft) : battle.status}
@@ -414,7 +435,7 @@ export function BattlePage({ userId, challengeId: initialChallengeId, onBack }: 
                         <div className="flex gap-4">
                           <div className="flex-1">
                             <div className="flex items-center justify-between text-sm mb-1">
-                              <span className="text-slate-400 text-xs">@{battle.challengerHandle || 'challenger'}</span>
+                              <span className="text-slate-400 text-xs">@{battle.challengerHandle || 'player 1'}</span>
                               <span className="text-purple-400 font-bold">{battle.challengerScore.toFixed(0)} pts</span>
                             </div>
                             <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
@@ -426,7 +447,7 @@ export function BattlePage({ userId, challengeId: initialChallengeId, onBack }: 
                           </div>
                           <div className="flex-1">
                             <div className="flex items-center justify-between text-sm mb-1">
-                              <span className="text-slate-400 text-xs">@{battle.opponentHandle || 'opponent'}</span>
+                              <span className="text-slate-400 text-xs">@{battle.opponentHandle || 'player 2'}</span>
                               <span className="text-pink-400 font-bold">{battle.opponentScore.toFixed(0)} pts</span>
                             </div>
                             <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
