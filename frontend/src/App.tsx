@@ -18,9 +18,10 @@ import { ReferralPanel } from './components/ReferralPanel';
 import { RecoverAccessModal } from './components/RecoverAccessModal';
 import { AgentChat } from './components/AgentChat';
 import { AdminPage } from './components/AdminPage';
+import { BattlePage } from './components/BattlePage';
 import { Sparkles, RotateCcw, Zap, FileText, Hash, Captions, Menu, X, ImagePlus, Clapperboard, BookOpen, Crown, Gift } from 'lucide-react';
 
-type Page = 'home' | 'payment' | 'contact' | 'image-analysis' | 'auto-reel' | 'blog' | 'blog-why-best';
+type Page = 'home' | 'payment' | 'contact' | 'image-analysis' | 'auto-reel' | 'blog' | 'blog-why-best' | 'battle';
 
 function App() {
   // Secret admin page — only accessible via ?admin in the URL
@@ -32,9 +33,15 @@ function App() {
   const isIdle = state === 'idle';
   const isWorking = state === 'uploading' || state === 'polling';
 
+  const [battleChallengeId, setBattleChallengeId] = useState<string | undefined>(() => {
+    const m = window.location.pathname.match(/^\/battle\/(.+)$/);
+    return m?.[1];
+  });
+
   const [page, setPage] = useState<Page>(() => {
     const p = new URLSearchParams(window.location.search).get('page');
-    const validPages: Page[] = ['blog', 'blog-why-best', 'contact', 'image-analysis', 'auto-reel', 'payment'];
+    const validPages: Page[] = ['blog', 'blog-why-best', 'contact', 'image-analysis', 'auto-reel', 'payment', 'battle'];
+    if (window.location.pathname.startsWith('/battle/')) return 'battle';
     return validPages.includes(p as Page) ? (p as Page) : 'home';
   });
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
@@ -131,6 +138,17 @@ function App() {
         isPaidUser={isPaidUser}
         onBack={() => { setPage('home'); window.scrollTo(0, 0); }}
         onUpgrade={() => { setPage('payment'); setSelectedPlan(null); setTimeout(() => scrollTo('pricing'), 100); }}
+      />
+    );
+  }
+
+  // ── Battle page ────────────────────────────────────────────────────
+  if (page === 'battle') {
+    return (
+      <BattlePage
+        userId={userId}
+        challengeId={battleChallengeId}
+        onBack={() => { setBattleChallengeId(undefined); setPage('home'); window.scrollTo(0, 0); }}
       />
     );
   }

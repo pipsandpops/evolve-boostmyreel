@@ -2,6 +2,10 @@ import type {
   AgentChatResponse,
   AgentMessage,
   AnalysisResult,
+  BattleScoreResult,
+  BattleSummary,
+  ChallengeStatus,
+  CreateChallengeResponse,
   BurnSubtitlesResponse,
   ImageAnalysisResult,
   ImageJobStatus,
@@ -297,6 +301,74 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ messages, userId }),
     });
+  },
+
+  // ── Reel Streak Battle ───────────────────────────────────────────────────────
+
+  createChallenge(
+    challengerId: string,
+    opponentHandle: string,
+    trashTalkMsg?: string,
+    opponentEmail?: string,
+  ): Promise<CreateChallengeResponse> {
+    return request<CreateChallengeResponse>('/battle/challenge', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ challengerId, opponentHandle, trashTalkMsg, opponentEmail }),
+    });
+  },
+
+  getBattle(id: string): Promise<ChallengeStatus | BattleScoreResult> {
+    return request<ChallengeStatus | BattleScoreResult>(`/battle/${id}`);
+  },
+
+  acceptChallenge(challengeId: string, opponentUserId: string): Promise<{ battleId: string; endsAt: string; message: string }> {
+    return request(`/battle/${challengeId}/accept`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ opponentUserId }),
+    });
+  },
+
+  declineChallenge(challengeId: string): Promise<{ message: string }> {
+    return request(`/battle/${challengeId}/decline`, { method: 'POST' });
+  },
+
+  submitBattleEntry(battleId: string, userId: string, reelUrl: string, instagramHandle?: string): Promise<{ entryId: string; message: string }> {
+    return request(`/battle/${battleId}/entry`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, reelUrl, instagramHandle }),
+    });
+  },
+
+  getBattleScores(battleId: string): Promise<BattleScoreResult['battle']> {
+    return request<BattleScoreResult['battle']>(`/battle/${battleId}/scores`);
+  },
+
+  recordBattleMetrics(
+    battleId: string,
+    userId: string,
+    entryId: string,
+    metrics: { views: number; likes: number; comments: number; saves: number; shares: number; followers: number },
+  ): Promise<{ message: string }> {
+    return request(`/battle/${battleId}/metrics/manual`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, entryId, ...metrics }),
+    });
+  },
+
+  voteBattle(battleId: string, entryId: string, voterToken: string): Promise<{ success: boolean; message: string; newTotalForEntry: number }> {
+    return request(`/battle/${battleId}/vote`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entryId, voterToken }),
+    });
+  },
+
+  getBattleLeaderboard(limit = 10): Promise<BattleSummary[]> {
+    return request<BattleSummary[]>(`/battle/leaderboard?limit=${limit}`);
   },
 
   // ── Referral ─────────────────────────────────────────────────────────────────

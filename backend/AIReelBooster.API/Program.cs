@@ -82,6 +82,10 @@ builder.Services.AddScoped<IReelVideoProcessor, ReelVideoProcessor>();
 builder.Services.AddScoped<IAutoReelService, AutoReelService>();
 builder.Services.AddHostedService<ReelGenerationWorker>();
 
+// ── Reel Streak Battle ────────────────────────────────────────────────────────
+builder.Services.AddScoped<IBattleService, BattleService>();
+builder.Services.AddHostedService<BattleExpiryWorker>();
+
 // ── ImageGrowthEngine ─────────────────────────────────────────────────────────
 builder.Services.AddSingleton<ImageJobStore>();
 builder.Services.AddSingleton<ImageProcessingQueue>();
@@ -155,6 +159,81 @@ using (var scope = app.Services.CreateScope())
 
     // Add Email column to UserPlans if not exists (safe for existing DBs)
     try { db.Database.ExecuteSqlRaw("ALTER TABLE UserPlans ADD COLUMN Email TEXT"); } catch { /* already exists */ }
+
+    // ── Battle tables ────────────────────────────────────────────────────────
+    db.Database.ExecuteSqlRaw("""
+        CREATE TABLE IF NOT EXISTS BattleChallenges (
+            Id             TEXT NOT NULL PRIMARY KEY,
+            ChallengerId   TEXT NOT NULL,
+            OpponentHandle TEXT NOT NULL,
+            OpponentEmail  TEXT,
+            TrashTalkMsg   TEXT,
+            Status         INTEGER NOT NULL DEFAULT 0,
+            BattleId       TEXT,
+            CreatedAt      TEXT NOT NULL DEFAULT (datetime('now')),
+            ExpiresAt      TEXT NOT NULL
+        )
+        """);
+
+    db.Database.ExecuteSqlRaw("""
+        CREATE TABLE IF NOT EXISTS Battles (
+            Id               TEXT NOT NULL PRIMARY KEY,
+            ChallengeId      TEXT NOT NULL,
+            ChallengerUserId TEXT NOT NULL,
+            OpponentUserId   TEXT NOT NULL,
+            Status           INTEGER NOT NULL DEFAULT 0,
+            StartedAt        TEXT NOT NULL,
+            EndsAt           TEXT NOT NULL,
+            WinnerUserId     TEXT,
+            CreatedAt        TEXT NOT NULL DEFAULT (datetime('now'))
+        )
+        """);
+
+    db.Database.ExecuteSqlRaw("""
+        CREATE TABLE IF NOT EXISTS BattleEntries (
+            Id                TEXT NOT NULL PRIMARY KEY,
+            BattleId          TEXT NOT NULL,
+            UserId            TEXT NOT NULL,
+            InstagramHandle   TEXT NOT NULL,
+            ReelUrl           TEXT NOT NULL,
+            ReelPostId        TEXT,
+            BaselineViews     INTEGER NOT NULL DEFAULT 0,
+            BaselineLikes     INTEGER NOT NULL DEFAULT 0,
+            BaselineComments  INTEGER NOT NULL DEFAULT 0,
+            BaselineSaves     INTEGER NOT NULL DEFAULT 0,
+            BaselineShares    INTEGER NOT NULL DEFAULT 0,
+            BaselineFollowers INTEGER NOT NULL DEFAULT 0,
+            SubmittedAt       TEXT NOT NULL DEFAULT (datetime('now'))
+        )
+        """);
+
+    db.Database.ExecuteSqlRaw("""
+        CREATE TABLE IF NOT EXISTS BattleMetricSnapshots (
+            Id         INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            EntryId    TEXT NOT NULL,
+            BattleId   TEXT NOT NULL,
+            Views      INTEGER NOT NULL DEFAULT 0,
+            Likes      INTEGER NOT NULL DEFAULT 0,
+            Comments   INTEGER NOT NULL DEFAULT 0,
+            Saves      INTEGER NOT NULL DEFAULT 0,
+            Shares     INTEGER NOT NULL DEFAULT 0,
+            Followers  INTEGER NOT NULL DEFAULT 0,
+            Score      REAL NOT NULL DEFAULT 0,
+            Source     INTEGER NOT NULL DEFAULT 1,
+            RecordedAt TEXT NOT NULL DEFAULT (datetime('now'))
+        )
+        """);
+
+    db.Database.ExecuteSqlRaw("""
+        CREATE TABLE IF NOT EXISTS BattleVotes (
+            Id         INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            BattleId   TEXT NOT NULL,
+            EntryId    TEXT NOT NULL,
+            VoterToken TEXT NOT NULL,
+            VoterIp    TEXT,
+            CreatedAt  TEXT NOT NULL DEFAULT (datetime('now'))
+        )
+        """);
 }
 
 // Middleware pipeline
