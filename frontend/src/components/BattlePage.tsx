@@ -61,12 +61,19 @@ function BattleArena({
     try {
       const data = await api.getBattleScores(battleId);
       setScores(data);
+      // Restore entryId from scores so the metrics form survives a page refresh
+      if (!entryId) {
+        if (data.challenger.userId === userId && data.audienceVotes.challengerEntryId)
+          setEntryId(data.audienceVotes.challengerEntryId);
+        else if (data.opponent.userId === userId && data.audienceVotes.opponentEntryId)
+          setEntryId(data.audienceVotes.opponentEntryId);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load battle.');
     } finally {
       setLoading(false);
     }
-  }, [battleId]);
+  }, [battleId, userId, entryId]);
 
   useEffect(() => {
     load();
@@ -155,7 +162,9 @@ function BattleArena({
             <div className="flex items-center justify-between mb-3">
               <div>
                 <p className="text-white font-bold">@{score.handle || score.userId.slice(0, 8)}</p>
-                <p className="text-xs text-slate-400">{score.metricSource}</p>
+                <p className="text-xs text-slate-400">
+                  {score.metricSource === 'none' ? 'awaiting metrics' : `via ${score.metricSource}`}
+                </p>
               </div>
               <div className="text-right">
                 <p className="text-2xl font-bold text-purple-400">{score.score.toFixed(0)}</p>
@@ -231,11 +240,23 @@ function BattleArena({
         </div>
       )}
 
+      {/* How scoring works — always visible to participants */}
+      {isParticipant && status === 'Active' && (
+        <div className="bg-blue-900/20 border border-blue-500/20 rounded-2xl p-4">
+          <p className="text-blue-300 text-sm font-semibold mb-1">📊 How scoring works</p>
+          <p className="text-slate-400 text-xs leading-relaxed">
+            Scores are based on the <strong className="text-slate-300">growth since you submitted</strong> — not the total numbers.
+            Open your Instagram Reel, check your current stats, and enter them below.
+            The app calculates the delta automatically. Update every few hours to keep your score live.
+          </p>
+        </div>
+      )}
+
       {/* Manual metrics */}
       {isParticipant && status === 'Active' && myEntry && (
         <div className="bg-slate-800/60 border border-slate-700 rounded-2xl p-5">
-          <h3 className="text-white font-semibold mb-1">Update Metrics</h3>
-          <p className="text-xs text-slate-400 mb-3">Max 2 updates per 4 hours</p>
+          <h3 className="text-white font-semibold mb-1">📈 Update Your Metrics</h3>
+          <p className="text-xs text-slate-400 mb-3">Enter your <strong>current</strong> Instagram stats — max 2 updates per 4 hours</p>
           <div className="grid grid-cols-3 gap-2 mb-3">
             {(['views','likes','comments','saves','shares','followers'] as const).map(k => (
               <div key={k}>
