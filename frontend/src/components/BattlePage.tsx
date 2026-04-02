@@ -342,6 +342,16 @@ function BattleArena({
               ))}
             </div>
           )}
+          {prizePool.brandUserId && userId === prizePool.brandUserId && (
+            <div className="mt-3">
+              <a
+                href={`/?page=brand-analytics&battleId=${battleId}&brandUserId=${encodeURIComponent(userId)}`}
+                className="block w-full text-center text-xs font-semibold bg-violet-700 hover:bg-violet-600 text-white rounded-lg py-2 transition-colors"
+              >
+                📊 View ROI Analytics
+              </a>
+            </div>
+          )}
         </div>
       ) : prize ? (
         <div className="bg-yellow-900/30 border border-yellow-500/30 rounded-2xl p-3 flex items-center gap-3">

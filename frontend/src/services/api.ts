@@ -5,6 +5,10 @@ import type {
   AwardReferralResponse,
   BoosterRow,
   BrandRoiAnalytics,
+  CampaignDetail,
+  CampaignSummary,
+  CreateCampaignPayload,
+  JoinCampaignPayload,
   BattleScoreResult,
   BattleSummary,
   ChallengeStatus,
@@ -509,6 +513,52 @@ export const api = {
     credits: number;
   }> {
     return request(`/referral/stats?userId=${encodeURIComponent(userId)}`);
+  },
+
+  // ── Brand Campaigns ───────────────────────────────────────────────────────────
+
+  createCampaign(payload: CreateCampaignPayload): Promise<{ campaignId: string; joinCode: string; joinUrl: string; endsAt: string }> {
+    return request('/campaign', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+  },
+
+  getMyCampaigns(brandUserId: string): Promise<CampaignSummary[]> {
+    return request<CampaignSummary[]>(`/campaign/my?brandUserId=${encodeURIComponent(brandUserId)}`);
+  },
+
+  getCampaign(campaignId: string): Promise<CampaignDetail> {
+    return request<CampaignDetail>(`/campaign/${campaignId}`);
+  },
+
+  getCampaignByJoinCode(joinCode: string): Promise<CampaignDetail> {
+    return request<CampaignDetail>(`/campaign/join/${joinCode}`);
+  },
+
+  joinCampaign(campaignId: string, payload: JoinCampaignPayload): Promise<{ entryId: string; message: string }> {
+    return request(`/campaign/${campaignId}/join`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+  },
+
+  voteCampaign(campaignId: string, entryId: string, voterToken: string): Promise<{ voted: boolean }> {
+    return request(`/campaign/${campaignId}/vote`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entryId, voterToken, voterIp: null }),
+    });
+  },
+
+  markCampaignPaid(campaignId: string, brandUserId: string): Promise<{ paid: boolean }> {
+    return request(`/campaign/${campaignId}/mark-paid`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ brandUserId }),
+    });
   },
 
   // ── Brand Analytics ───────────────────────────────────────────────────────────

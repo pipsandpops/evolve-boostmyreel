@@ -38,6 +38,7 @@ public record CreatePrizePoolInput(
 
 public record PrizePoolSummary(
     string PrizePoolId,
+    string BrandUserId,
     decimal TotalAmount,
     string Currency,
     PrizePoolStatus Status,

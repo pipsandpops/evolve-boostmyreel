@@ -20,9 +20,11 @@ import { AgentChat } from './components/AgentChat';
 import { AdminPage } from './components/AdminPage';
 import { BattlePage } from './components/BattlePage';
 import BrandAnalyticsDashboard from './components/BrandAnalyticsDashboard';
+import BrandDashboard from './components/BrandDashboard';
+import CampaignPage from './components/CampaignPage';
 import { Sparkles, RotateCcw, Zap, FileText, Hash, Captions, Menu, X, ImagePlus, Clapperboard, BookOpen, Crown, Gift } from 'lucide-react';
 
-type Page = 'home' | 'payment' | 'contact' | 'image-analysis' | 'auto-reel' | 'blog' | 'blog-why-best' | 'battle' | 'brand-analytics';
+type Page = 'home' | 'payment' | 'contact' | 'image-analysis' | 'auto-reel' | 'blog' | 'blog-why-best' | 'battle' | 'brand-analytics' | 'brand-dashboard' | 'campaign';
 
 function App() {
   // Secret admin page — only accessible via ?admin in the URL
@@ -41,9 +43,15 @@ function App() {
 
   const [page, setPage] = useState<Page>(() => {
     const p = new URLSearchParams(window.location.search).get('page');
-    const validPages: Page[] = ['blog', 'blog-why-best', 'contact', 'image-analysis', 'auto-reel', 'payment', 'battle', 'brand-analytics'];
+    const validPages: Page[] = ['blog', 'blog-why-best', 'contact', 'image-analysis', 'auto-reel', 'payment', 'battle', 'brand-analytics', 'brand-dashboard', 'campaign'];
     if (window.location.pathname.startsWith('/battle/')) return 'battle';
+    if (window.location.pathname.startsWith('/campaign/')) return 'campaign';
     return validPages.includes(p as Page) ? (p as Page) : 'home';
+  });
+
+  const [campaignJoinCode, setCampaignJoinCode] = useState<string>(() => {
+    const m = window.location.pathname.match(/^\/campaign\/(.+)$/);
+    return m?.[1] ?? new URLSearchParams(window.location.search).get('joinCode') ?? '';
   });
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -143,10 +151,36 @@ function App() {
     );
   }
 
+  // ── Brand Dashboard ───────────────────────────────────────────────
+  if (page === 'brand-dashboard') {
+    return (
+      <BrandDashboard
+        userId={userId}
+        onViewCampaign={(joinCode) => { setCampaignJoinCode(joinCode); setPage('campaign'); window.scrollTo(0, 0); }}
+        onViewAnalytics={(campaignId) => {
+          window.open(`/?page=brand-analytics&battleId=${campaignId}&brandUserId=${encodeURIComponent(userId)}`, '_blank');
+        }}
+        onBack={() => { setPage('home'); window.scrollTo(0, 0); }}
+      />
+    );
+  }
+
+  // ── Campaign page (public — submit + vote) ────────────────────────
+  if (page === 'campaign') {
+    return (
+      <CampaignPage
+        joinCode={campaignJoinCode}
+        userId={userId}
+        brandUserId={userId}
+        onBack={() => { setPage('brand-dashboard'); window.scrollTo(0, 0); }}
+      />
+    );
+  }
+
   // ── Brand Analytics page ──────────────────────────────────────────
   if (page === 'brand-analytics') {
     const params = new URLSearchParams(window.location.search);
-    const roiBattleId   = params.get('battleId')   ?? '';
+    const roiBattleId    = params.get('battleId')    ?? '';
     const roiBrandUserId = params.get('brandUserId') ?? '';
     return (
       <BrandAnalyticsDashboard
@@ -302,6 +336,9 @@ function App() {
             </button>
             <button onClick={() => { setPage('battle'); window.scrollTo(0, 0); }} className="nav-tool-btn" style={{ color: '#f59e0b' }}>
               ⚔️ Battle
+            </button>
+            <button onClick={() => { setPage('brand-dashboard'); window.scrollTo(0, 0); }} className="nav-tool-btn" style={{ color: '#a78bfa' }}>
+              <Crown size={14} /> Brands
             </button>
           </div>
 
