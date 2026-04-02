@@ -19,14 +19,19 @@ public class BattleService : IBattleService
         { 168, 12 },
     };
 
-    // ── Scoring weights ───────────────────────────────────────────────────────
-    private const double W_Views     = 0.30;
-    private const double W_Likes     = 0.25;
-    private const double W_Comments  = 0.20;
-    private const double W_Saves     = 0.15;
-    private const double W_Shares    = 0.10;
-    private const double FollowerMul = 50.0;   // 1 follower ≈ 50 engagements
-    private const double VoteMul     = 10.0;
+    // ── Scoring formula (per spec) ────────────────────────────────────────────
+    // Instagram & YouTube: Views → 25pts/1000  |  Likes → 10pts  |  Comments → 15pts
+    // Instagram only:      Saves → 20pts        |  Shares → 20pts
+    // YouTube only:        Shares → 20pts
+    // Both platform battle: each platform score weighted at 50% each
+    // Audience boost: 5pts per boost vote
+    private const double PtsPerThousandViews = 25.0;
+    private const double PtsPerLike          = 10.0;
+    private const double PtsPerComment       = 15.0;
+    private const double PtsPerSave          = 20.0;   // IG only
+    private const double PtsPerShare         = 20.0;
+    private const double PlatformWeight      = 0.5;    // each platform in "Both" battles
+    private const double VoteMul             = 5.0;    // audience boost pts
 
     // Anti-cheat: deltas above this multiplier of baseline are capped
     private const double AnticheatCapMultiplier = 3.0;
@@ -235,6 +240,27 @@ public class BattleService : IBattleService
 
         var timeLeft = Math.Max(0, (int)(battle.EndsAt - DateTime.UtcNow).TotalSeconds);
 
+        var cScore = (challengerScore ?? EmptyScore(battle.ChallengerUserId)).Score;
+        var oScore = (opponentScore   ?? EmptyScore(battle.OpponentUserId)).Score;
+        var scoreGap = Math.Abs(cScore - oScore);
+
+        string? leader        = null;
+        string? momentumAlert = null;
+
+        if (challengerScore is not null || opponentScore is not null)
+        {
+            var cHandle = (challengerScore ?? EmptyScore(battle.ChallengerUserId)).Handle;
+            var oHandle = (opponentScore   ?? EmptyScore(battle.OpponentUserId)).Handle;
+
+            if (scoreGap > 0)
+                leader = cScore >= oScore ? cHandle : oHandle;
+
+            // Momentum: if leader's score gap grew >20% since last snapshot window
+            // (use a lightweight heuristic: score gap > 100 pts is "gaining fast")
+            if (scoreGap >= 100 && leader is not null)
+                momentumAlert = $"@{leader} is gaining fast! ⚡";
+        }
+
         return new BattleScoreResult(
             BattleId:             battleId,
             Status:               battle.Status.ToString(),
@@ -246,7 +272,10 @@ public class BattleService : IBattleService
             Opponent:             opponentScore   ?? EmptyScore(battle.OpponentUserId),
             AudienceVotes:        new AudienceVoteTally(
                 challengerEntry?.Id ?? "", challengerVotes,
-                opponentEntry?.Id   ?? "", opponentVotes)
+                opponentEntry?.Id   ?? "", opponentVotes),
+            ScoreGap:             Math.Round(scoreGap, 2),
+            Leader:               leader,
+            MomentumAlert:        momentumAlert
         );
     }
 
@@ -280,7 +309,7 @@ public class BattleService : IBattleService
             latestIg = latestAny;
         }
 
-        // ── Instagram score ───────────────────────────────────────────────────
+        // ── Instagram score (25pts/1000 views, 10 likes, 15 comments, 20 saves, 20 shares)
         double igScore = 0; long dViews = 0, dLikes = 0, dComments = 0, dSaves = 0, dShares = 0, dFollowers = 0;
         string metricSource = "none";
 
@@ -292,24 +321,34 @@ public class BattleService : IBattleService
             dSaves    = ApplyAnticheat(latestIg.Saves    - entry.BaselineSaves,    entry.BaselineSaves);
             dShares   = ApplyAnticheat(latestIg.Shares   - entry.BaselineShares,   entry.BaselineShares);
             dFollowers = ApplyAnticheat(latestIg.Followers - entry.BaselineFollowers, entry.BaselineFollowers);
-            igScore    = (dViews * W_Views) + (dLikes * W_Likes) + (dComments * W_Comments)
-                       + (dSaves * W_Saves) + (dShares * W_Shares) + (dFollowers * FollowerMul);
+            igScore   = (dViews / 1000.0 * PtsPerThousandViews)
+                      + (dLikes    * PtsPerLike)
+                      + (dComments * PtsPerComment)
+                      + (dSaves    * PtsPerSave)
+                      + (dShares   * PtsPerShare);
             metricSource = latestIg.Source.ToString();
         }
 
-        // ── YouTube score ─────────────────────────────────────────────────────
+        // ── YouTube score (25pts/1000 views, 10 likes, 15 comments, 20 shares — no saves)
         double ytScore = 0;
         if (latestYt is not null)
         {
-            var ytViews     = ApplyAnticheat(latestYt.Views    - entry.YtBaselineViews,    entry.YtBaselineViews);
-            var ytLikes     = ApplyAnticheat(latestYt.Likes    - entry.YtBaselineLikes,    entry.YtBaselineLikes);
-            var ytComments  = ApplyAnticheat(latestYt.Comments - entry.YtBaselineComments, entry.YtBaselineComments);
-            var ytFollowers = ApplyAnticheat(latestYt.Followers - entry.YtBaselineFollowers, entry.YtBaselineFollowers);
-            ytScore = (ytViews * W_Views) + (ytLikes * W_Likes) + (ytComments * W_Comments)
-                    + (ytFollowers * FollowerMul);
+            var ytViews    = ApplyAnticheat(latestYt.Views    - entry.YtBaselineViews,    entry.YtBaselineViews);
+            var ytLikes    = ApplyAnticheat(latestYt.Likes    - entry.YtBaselineLikes,    entry.YtBaselineLikes);
+            var ytComments = ApplyAnticheat(latestYt.Comments - entry.YtBaselineComments, entry.YtBaselineComments);
+            var ytShares   = ApplyAnticheat(latestYt.Shares   - 0, 0); // YouTube shares tracked separately
+            ytScore = (ytViews / 1000.0 * PtsPerThousandViews)
+                    + (ytLikes    * PtsPerLike)
+                    + (ytComments * PtsPerComment)
+                    + (ytShares   * PtsPerShare);
         }
 
-        var combined = igScore + ytScore + (voteCount * VoteMul);
+        // Both-platform: each platform weighted 50%; single platform: full score
+        var platformScore = entry.SubmittedPlatform == BattlePlatform.Both
+            ? (igScore * PlatformWeight) + (ytScore * PlatformWeight)
+            : igScore + ytScore;
+
+        var combined = platformScore + (voteCount * VoteMul);
 
         return new CreatorScore(
             UserId:           entry.UserId,

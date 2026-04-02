@@ -65,7 +65,11 @@ public record BattleScoreResult(
     string Platform,
     CreatorScore Challenger,
     CreatorScore Opponent,
-    AudienceVoteTally AudienceVotes
+    AudienceVoteTally AudienceVotes,
+    // Live insight fields
+    double ScoreGap,         // abs difference
+    string? Leader,          // handle of who's ahead
+    string? MomentumAlert    // e.g. "@creator is gaining fast! ⚡"
 );
 
 public record CreatorScore(
