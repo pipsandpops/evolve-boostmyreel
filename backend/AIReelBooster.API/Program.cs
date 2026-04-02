@@ -83,8 +83,7 @@ builder.Services.AddScoped<IAutoReelService, AutoReelService>();
 builder.Services.AddHostedService<ReelGenerationWorker>();
 
 // ── Reel Streak Battle ────────────────────────────────────────────────────────
-builder.Services.AddHttpClient<ContentValidationService>();
-builder.Services.AddScoped<ContentValidationService>();
+builder.Services.AddHttpClient<ContentValidationService>(); // Transient with typed HttpClient
 builder.Services.AddScoped<IBattleService, BattleService>();
 builder.Services.AddHostedService<BattleExpiryWorker>();
 builder.Services.AddHttpClient<IPrizePoolService, PrizePoolService>();
