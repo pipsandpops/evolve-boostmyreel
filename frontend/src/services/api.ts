@@ -311,11 +311,22 @@ export const api = {
     trashTalkMsg?: string,
     opponentEmail?: string,
     prizeDescription?: string,
+    battleTitle?: string,
+    durationHours?: number,
+    platform?: string,
+    themeHashtag?: string,
+    prizePoolAmount?: number,
+    prizeCurrency?: string,
+    contentGuidelines?: string,
   ): Promise<CreateChallengeResponse> {
     return request<CreateChallengeResponse>('/battle/challenge', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ challengerId, opponentHandle, trashTalkMsg, opponentEmail, prizeDescription }),
+      body: JSON.stringify({
+        challengerId, opponentHandle, trashTalkMsg, opponentEmail, prizeDescription,
+        battleTitle, durationHours: durationHours ?? 24, platform: platform ?? 'Instagram',
+        themeHashtag, prizePoolAmount, prizeCurrency, contentGuidelines,
+      }),
     });
   },
 

@@ -373,10 +373,43 @@ export function BattlePage({ userId, challengeId: initialChallengeId, onBack }: 
             <p className="text-slate-300 mb-2">
               @{pendingChallenge.opponentHandle} challenges you to a 24hr Reel Battle
             </p>
-            {pendingChallenge.prizeDescription && (
+            {/* ContentClash meta */}
+            <div className="flex flex-wrap justify-center gap-2 mb-3 text-xs">
+              {pendingChallenge.platform && (
+                <span className="bg-slate-700 text-slate-300 px-2 py-1 rounded-full">
+                  {pendingChallenge.platform === 'Instagram' ? '📸' : pendingChallenge.platform === 'YouTube' ? '▶️' : '🌐'} {pendingChallenge.platform}
+                </span>
+              )}
+              {pendingChallenge.durationHours && (
+                <span className="bg-slate-700 text-slate-300 px-2 py-1 rounded-full">
+                  ⏱ {pendingChallenge.durationHours === 168 ? '7 Days' : `${pendingChallenge.durationHours}h`}
+                </span>
+              )}
+              {pendingChallenge.themeHashtag && (
+                <span className="bg-purple-900/50 text-purple-300 px-2 py-1 rounded-full font-semibold">
+                  #{pendingChallenge.themeHashtag}
+                </span>
+              )}
+            </div>
+
+            {pendingChallenge.prizePoolAmount && (
+              <div className="inline-flex items-center gap-2 bg-yellow-900/30 border border-yellow-500/30 rounded-xl px-4 py-2 mb-3">
+                <span>🏆</span>
+                <span className="text-yellow-300 font-bold text-sm">
+                  Prize Pool: {pendingChallenge.prizeCurrency} {pendingChallenge.prizePoolAmount.toLocaleString()}
+                </span>
+              </div>
+            )}
+            {!pendingChallenge.prizePoolAmount && pendingChallenge.prizeDescription && (
               <div className="inline-flex items-center gap-2 bg-yellow-900/30 border border-yellow-500/30 rounded-xl px-4 py-2 mb-3">
                 <span>🏆</span>
                 <span className="text-yellow-300 font-semibold text-sm">Prize: {pendingChallenge.prizeDescription}</span>
+              </div>
+            )}
+            {pendingChallenge.contentGuidelines && (
+              <div className="bg-blue-900/20 border border-blue-500/20 rounded-xl p-3 mb-3 text-left">
+                <p className="text-blue-300 text-xs font-semibold mb-1">📋 Content Guidelines</p>
+                <p className="text-slate-300 text-xs">{pendingChallenge.contentGuidelines}</p>
               </div>
             )}
             {pendingChallenge.trashTalkMsg && (
