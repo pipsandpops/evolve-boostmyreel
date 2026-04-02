@@ -314,7 +314,7 @@ function App() {
             {[
               { label: 'Features', id: 'demo' },
               { label: 'Pricing', id: 'pricing' },
-              { label: 'About', id: 'about' },
+
             ].map(l => (
               <button key={l.id} onClick={() => scrollTo(l.id)} style={{
                 background: 'none', border: 'none', cursor: 'pointer',
@@ -403,7 +403,7 @@ function App() {
             {[
               { label: 'Features', id: 'demo' },
               { label: 'Pricing', id: 'pricing' },
-              { label: 'About', id: 'about' },
+
             ].map(l => (
               <button key={l.id} onClick={() => scrollTo(l.id)} style={{
                 display: 'block', width: '100%', textAlign: 'left',
@@ -600,7 +600,7 @@ function App() {
               {[
                 { label: 'Features', id: 'demo' },
                 { label: 'Pricing', id: 'pricing' },
-                { label: 'About', id: 'about' },
+  
               ].map(l => (
                 <button key={l.id} onClick={() => scrollTo(l.id)} style={{
                   background: 'none', border: 'none', cursor: 'pointer',
