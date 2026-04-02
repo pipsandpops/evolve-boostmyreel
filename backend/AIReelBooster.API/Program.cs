@@ -163,7 +163,7 @@ using (var scope = app.Services.CreateScope())
     try { db.Database.ExecuteSqlRaw("ALTER TABLE UserPlans ADD COLUMN Email TEXT"); } catch { /* already exists */ }
 
     // ── Multi-platform submission columns ─────────────────────────────────────
-    try { db.Database.ExecuteSqlRaw("ALTER TABLE Battles ADD COLUMN SubmissionDeadlineAt TEXT NOT NULL DEFAULT (datetime('now', '+2 hours'))"); } catch { }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE Battles ADD COLUMN SubmissionDeadlineAt TEXT NOT NULL DEFAULT '2000-01-01 00:00:00'"); } catch { }
     try { db.Database.ExecuteSqlRaw("ALTER TABLE BattleEntries ADD COLUMN SubmittedPlatform INTEGER NOT NULL DEFAULT 0"); } catch { }
     try { db.Database.ExecuteSqlRaw("ALTER TABLE BattleEntries ADD COLUMN YouTubeUrl TEXT"); } catch { }
     try { db.Database.ExecuteSqlRaw("ALTER TABLE BattleEntries ADD COLUMN YouTubeHandle TEXT"); } catch { }
