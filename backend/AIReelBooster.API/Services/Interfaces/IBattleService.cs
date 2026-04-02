@@ -23,6 +23,7 @@ public interface IBattleService
 
     // Leaderboard
     Task<List<BattleSummary>> GetLeaderboardAsync(int limit = 10, CancellationToken ct = default);
+    Task<List<BoosterRow>> GetBoosterLeaderboardAsync(string battleId, int limit = 10, CancellationToken ct = default);
 
     // Worker methods
     Task ExpireStaleItemsAsync(CancellationToken ct = default);

@@ -184,16 +184,34 @@ public class PrizePoolService : IPrizePoolService
             ? battle.OpponentUserId
             : battle.ChallengerUserId;
 
-        // Top 10 voters for the winning entry
+        // Top boosters for the winning entry — ranked by total votes (free + paid + referral)
         var winnerEntry = await _db.BattleEntries
             .FirstOrDefaultAsync(e => e.BattleId == battleId && e.UserId == battle.WinnerUserId, ct);
 
-        var topVoterTokens = winnerEntry is null ? [] : await _db.BattleVotes
-            .Where(v => v.EntryId == winnerEntry.Id)
-            .OrderBy(v => v.CreatedAt)
-            .Take(PrizePoolTiers.MaxVoters)
-            .Select(v => v.VoterToken)
-            .ToListAsync(ct);
+        List<string> topVoterTokens = [];
+        if (winnerEntry is not null)
+        {
+            var freeVotes = await _db.BattleVotes
+                .Where(v => v.EntryId == winnerEntry.Id)
+                .GroupBy(v => v.VoterToken)
+                .Select(g => new { Token = g.Key, Votes = g.Count() })
+                .ToListAsync(ct);
+
+            var paidVotes = await _db.VoteBoosts
+                .Where(b => b.EntryId == winnerEntry.Id && b.Verified)
+                .GroupBy(b => b.VoterToken)
+                .Select(g => new { Token = g.Key, Votes = (int)g.Sum(b => b.VoteCount) })
+                .ToListAsync(ct);
+
+            topVoterTokens = freeVotes
+                .Concat(paidVotes)
+                .GroupBy(x => x.Token)
+                .Select(g => new { Token = g.Key, Votes = g.Sum(x => x.Votes) })
+                .OrderByDescending(x => x.Votes)
+                .Take(PrizePoolTiers.MaxVoters)
+                .Select(x => x.Token)
+                .ToList();
+        }
 
         var winnerAmt   = Math.Round(pool.Amount * PrizePoolTiers.WinnerPct,   2);
         var runnerUpAmt = Math.Round(pool.Amount * PrizePoolTiers.RunnerUpPct, 2);

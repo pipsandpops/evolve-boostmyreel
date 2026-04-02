@@ -2,6 +2,7 @@ using AIReelBooster.API.Infrastructure;
 using AIReelBooster.API.Models.Domain;
 using AIReelBooster.API.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using BoosterRow = AIReelBooster.API.Services.Interfaces.BoosterRow;
 
 namespace AIReelBooster.API.Services;
 
@@ -10,6 +11,7 @@ public class BattleService : IBattleService
     private readonly AppDbContext _db;
     private readonly ILogger<BattleService> _logger;
     private readonly ContentValidationService _validator;
+    private readonly IVoteBoostService _boosts;
 
     // Submission deadline multiplier: battle_hours / divisor = deadline hours
     private static readonly Dictionary<int, int> SubmissionDeadlineHours = new()
@@ -36,11 +38,13 @@ public class BattleService : IBattleService
     // Anti-cheat: deltas above this multiplier of baseline are capped
     private const double AnticheatCapMultiplier = 3.0;
 
-    public BattleService(AppDbContext db, ContentValidationService validator, ILogger<BattleService> logger)
+    public BattleService(AppDbContext db, ContentValidationService validator,
+        IVoteBoostService boosts, ILogger<BattleService> logger)
     {
         _db        = db;
         _validator = validator;
-        _logger = logger;
+        _boosts    = boosts;
+        _logger    = logger;
     }
 
     // ── Challenge ─────────────────────────────────────────────────────────────
@@ -221,17 +225,23 @@ public class BattleService : IBattleService
             .Where(e => e.BattleId == battleId)
             .ToListAsync(ct);
 
-        var votes = await _db.BattleVotes
+        // Combined vote totals: free votes + paid boosts + referral bonuses
+        var votesByEntry = await _boosts.GetTotalVotesByEntryAsync(battleId, ct);
+
+        // Also count free votes not yet in VoteBoosts (BattleVotes table)
+        var freeVotes = await _db.BattleVotes
             .Where(v => v.BattleId == battleId)
             .GroupBy(v => v.EntryId)
             .Select(g => new { EntryId = g.Key, Count = g.Count() })
             .ToListAsync(ct);
+        foreach (var fv in freeVotes)
+            votesByEntry[fv.EntryId] = votesByEntry.GetValueOrDefault(fv.EntryId) + fv.Count;
 
         var challengerEntry = entries.FirstOrDefault(e => e.UserId == battle.ChallengerUserId);
         var opponentEntry   = entries.FirstOrDefault(e => e.UserId == battle.OpponentUserId);
 
-        var challengerVotes = votes.FirstOrDefault(v => v.EntryId == (challengerEntry?.Id ?? ""))?.Count ?? 0;
-        var opponentVotes   = votes.FirstOrDefault(v => v.EntryId == (opponentEntry?.Id   ?? ""))?.Count ?? 0;
+        var challengerVotes = votesByEntry.GetValueOrDefault(challengerEntry?.Id ?? "", 0);
+        var opponentVotes   = votesByEntry.GetValueOrDefault(opponentEntry?.Id   ?? "", 0);
 
         var challengerScore = challengerEntry is null ? null
             : await BuildCreatorScoreAsync(challengerEntry, challengerVotes, ct);
@@ -270,7 +280,7 @@ public class BattleService : IBattleService
             Platform:             battle.Platform.ToString(),
             Challenger:           challengerScore ?? EmptyScore(battle.ChallengerUserId),
             Opponent:             opponentScore   ?? EmptyScore(battle.OpponentUserId),
-            AudienceVotes:        new AudienceVoteTally(
+            AudienceVotes: new AudienceVoteTally(
                 challengerEntry?.Id ?? "", challengerVotes,
                 opponentEntry?.Id   ?? "", opponentVotes),
             ScoreGap:             Math.Round(scoreGap, 2),
@@ -477,6 +487,10 @@ public class BattleService : IBattleService
         }
         return summaries;
     }
+
+    public Task<List<BoosterRow>> GetBoosterLeaderboardAsync(
+        string battleId, int limit = 10, CancellationToken ct = default)
+        => _boosts.GetTopBoostersAsync(battleId, limit, ct);
 
     // ── Worker methods ────────────────────────────────────────────────────────
 

@@ -20,6 +20,7 @@ public class AppDbContext : DbContext
     public DbSet<BattleEntry>           BattleEntries         => Set<BattleEntry>();
     public DbSet<BattleMetricSnapshot>  BattleMetricSnapshots => Set<BattleMetricSnapshot>();
     public DbSet<BattleVote>            BattleVotes           => Set<BattleVote>();
+    public DbSet<VoteBoost>             VoteBoosts            => Set<VoteBoost>();
 
     // ── Prize Pool ────────────────────────────────────────────────────────────
     public DbSet<PrizePool>             PrizePools            => Set<PrizePool>();
@@ -40,6 +41,7 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<BattleEntry>().HasKey(e => e.Id);
         modelBuilder.Entity<BattleMetricSnapshot>().HasKey(s => s.Id);
         modelBuilder.Entity<BattleVote>().HasKey(v => v.Id);
+        modelBuilder.Entity<VoteBoost>().HasKey(v => v.Id);
 
         // Prize pool keys
         modelBuilder.Entity<PrizePool>().HasKey(p => p.Id);

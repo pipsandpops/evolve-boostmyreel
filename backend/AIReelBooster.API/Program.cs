@@ -84,6 +84,7 @@ builder.Services.AddHostedService<ReelGenerationWorker>();
 
 // ── Reel Streak Battle ────────────────────────────────────────────────────────
 builder.Services.AddHttpClient<ContentValidationService>(); // Transient with typed HttpClient
+builder.Services.AddHttpClient<IVoteBoostService, VoteBoostService>();
 builder.Services.AddScoped<IBattleService, BattleService>();
 builder.Services.AddHostedService<BattleExpiryWorker>();
 builder.Services.AddHttpClient<IPrizePoolService, PrizePoolService>();
@@ -290,6 +291,24 @@ using (var scope = app.Services.CreateScope())
             VoterToken TEXT NOT NULL,
             VoterIp    TEXT,
             CreatedAt  TEXT NOT NULL DEFAULT (datetime('now'))
+        )
+        """);
+
+    // ── Vote Boost table ──────────────────────────────────────────────────
+    db.Database.ExecuteSqlRaw("""
+        CREATE TABLE IF NOT EXISTS VoteBoosts (
+            Id                INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            BattleId          TEXT NOT NULL,
+            EntryId           TEXT NOT NULL,
+            VoterToken        TEXT NOT NULL,
+            VoterIp           TEXT,
+            VoteCount         INTEGER NOT NULL DEFAULT 0,
+            AmountPaid        REAL NOT NULL DEFAULT 0,
+            BoostTier         TEXT NOT NULL DEFAULT 'Starter',
+            RazorpayOrderId   TEXT,
+            RazorpayPaymentId TEXT,
+            Verified          INTEGER NOT NULL DEFAULT 0,
+            CreatedAt         TEXT NOT NULL DEFAULT (datetime('now'))
         )
         """);
 
