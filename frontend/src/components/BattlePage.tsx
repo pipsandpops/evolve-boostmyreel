@@ -773,21 +773,33 @@ export function BattlePage({ userId, challengeId: initialChallengeId, onBack }: 
             {pendingChallenge.trashTalkMsg && (
               <p className="text-purple-300 italic text-sm mb-4">"{pendingChallenge.trashTalkMsg}"</p>
             )}
-            <div className="flex gap-3 justify-center">
-              <button
-                onClick={acceptChallenge}
-                disabled={accepting}
-                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 disabled:opacity-50 text-white font-bold px-6 py-2.5 rounded-xl transition-all"
-              >
-                {accepting ? 'Accepting…' : '⚔️ Accept'}
-              </button>
-              <button
-                onClick={declineChallenge}
-                className="bg-slate-700 hover:bg-slate-600 text-white px-6 py-2.5 rounded-xl transition-colors"
-              >
-                Decline
-              </button>
-            </div>
+            {pendingChallenge.status === 'Pending' ? (
+              <div className="flex gap-3 justify-center">
+                <button
+                  onClick={acceptChallenge}
+                  disabled={accepting}
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 disabled:opacity-50 text-white font-bold px-6 py-2.5 rounded-xl transition-all"
+                >
+                  {accepting ? 'Accepting…' : '⚔️ Accept'}
+                </button>
+                <button
+                  onClick={declineChallenge}
+                  className="bg-slate-700 hover:bg-slate-600 text-white px-6 py-2.5 rounded-xl transition-colors"
+                >
+                  Decline
+                </button>
+              </div>
+            ) : (
+              <div className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold ${
+                pendingChallenge.status === 'Declined' ? 'bg-red-900/40 text-red-300 border border-red-500/30' :
+                pendingChallenge.status === 'Expired'  ? 'bg-slate-700/60 text-slate-400 border border-slate-600' :
+                'bg-green-900/40 text-green-300 border border-green-500/30'
+              }`}>
+                {pendingChallenge.status === 'Declined' ? '❌ Challenge Declined' :
+                 pendingChallenge.status === 'Expired'  ? '⏰ Challenge Expired' :
+                 '✅ Challenge Accepted'}
+              </div>
+            )}
           </div>
         )}
 
