@@ -152,6 +152,7 @@ public class PrizePoolService : IPrizePoolService
 
         return new PrizePoolSummary(
             PrizePoolId:      pool.Id,
+            BrandUserId:      pool.BrandUserId,
             TotalAmount:      pool.Amount,
             Currency:         pool.Currency,
             Status:           pool.Status,

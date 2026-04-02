@@ -347,6 +347,7 @@ export interface PrizeDistributionRow {
 export interface PrizePoolSummary {
   hasPrizePool: boolean;
   prizePoolId?: string;
+  brandUserId?: string;
   totalAmount?: number;
   currency?: string;
   status?: PrizePoolStatus;
