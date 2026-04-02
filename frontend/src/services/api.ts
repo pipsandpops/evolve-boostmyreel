@@ -346,11 +346,30 @@ export const api = {
     return request(`/battle/${challengeId}/decline`, { method: 'POST' });
   },
 
-  submitBattleEntry(battleId: string, userId: string, reelUrl: string, instagramHandle?: string): Promise<{ entryId: string; message: string }> {
+  submitBattleEntry(
+    battleId: string,
+    userId: string,
+    opts: {
+      platform: string;          // 'Instagram' | 'YouTube' | 'Both'
+      instagramUrl?: string;
+      youtubeUrl?: string;
+      instagramHandle?: string;
+      youtubeHandle?: string;
+    },
+  ): Promise<{ entryId: string; submittedPlatform: string; validationStatus: string; message: string }> {
     return request(`/battle/${battleId}/entry`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, reelUrl, instagramHandle }),
+      body: JSON.stringify({
+        userId,
+        platform: opts.platform,
+        instagramUrl: opts.instagramUrl,
+        youtubeUrl: opts.youtubeUrl,
+        instagramHandle: opts.instagramHandle,
+        youtubeHandle: opts.youtubeHandle,
+        // backward-compat: also send reelUrl for older backend versions
+        reelUrl: opts.instagramUrl,
+      }),
     });
   },
 
@@ -363,11 +382,12 @@ export const api = {
     userId: string,
     entryId: string,
     metrics: { views: number; likes: number; comments: number; saves: number; shares: number; followers: number },
+    platform = 'Instagram',
   ): Promise<{ message: string }> {
     return request(`/battle/${battleId}/metrics/manual`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, entryId, ...metrics }),
+      body: JSON.stringify({ userId, entryId, ...metrics, platform }),
     });
   },
 

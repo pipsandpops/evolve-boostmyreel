@@ -282,6 +282,11 @@ export interface CreatorScore {
   deltaShares: number;
   deltaFollowers: number;
   metricSource: string;
+  // Multi-platform breakdown
+  instagramScore: number | null;
+  youTubeScore: number | null;
+  submittedPlatform: string;
+  validationStatus: 'Skipped' | 'Pending' | 'Approved' | 'Rejected';
 }
 
 export interface AudienceVoteTally {
@@ -297,7 +302,9 @@ export interface BattleScoreResult {
     battleId: string;
     status: string;
     endsAt: string;
+    submissionDeadlineAt: string;
     timeLeftSeconds: number;
+    platform: string;
     challenger: CreatorScore;
     opponent: CreatorScore;
     audienceVotes: AudienceVoteTally;

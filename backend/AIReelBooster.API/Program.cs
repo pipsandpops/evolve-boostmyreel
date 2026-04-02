@@ -83,6 +83,8 @@ builder.Services.AddScoped<IAutoReelService, AutoReelService>();
 builder.Services.AddHostedService<ReelGenerationWorker>();
 
 // ── Reel Streak Battle ────────────────────────────────────────────────────────
+builder.Services.AddHttpClient<ContentValidationService>();
+builder.Services.AddScoped<ContentValidationService>();
 builder.Services.AddScoped<IBattleService, BattleService>();
 builder.Services.AddHostedService<BattleExpiryWorker>();
 builder.Services.AddHttpClient<IPrizePoolService, PrizePoolService>();
@@ -160,6 +162,19 @@ using (var scope = app.Services.CreateScope())
 
     // Add Email column to UserPlans if not exists (safe for existing DBs)
     try { db.Database.ExecuteSqlRaw("ALTER TABLE UserPlans ADD COLUMN Email TEXT"); } catch { /* already exists */ }
+
+    // ── Multi-platform submission columns ─────────────────────────────────────
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE Battles ADD COLUMN SubmissionDeadlineAt TEXT NOT NULL DEFAULT (datetime('now', '+2 hours'))"); } catch { }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE BattleEntries ADD COLUMN SubmittedPlatform INTEGER NOT NULL DEFAULT 0"); } catch { }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE BattleEntries ADD COLUMN YouTubeUrl TEXT"); } catch { }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE BattleEntries ADD COLUMN YouTubeHandle TEXT"); } catch { }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE BattleEntries ADD COLUMN ValidationStatus INTEGER NOT NULL DEFAULT 0"); } catch { }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE BattleEntries ADD COLUMN ValidationNotes TEXT"); } catch { }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE BattleEntries ADD COLUMN YtBaselineViews INTEGER NOT NULL DEFAULT 0"); } catch { }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE BattleEntries ADD COLUMN YtBaselineLikes INTEGER NOT NULL DEFAULT 0"); } catch { }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE BattleEntries ADD COLUMN YtBaselineComments INTEGER NOT NULL DEFAULT 0"); } catch { }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE BattleEntries ADD COLUMN YtBaselineFollowers INTEGER NOT NULL DEFAULT 0"); } catch { }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE BattleMetricSnapshots ADD COLUMN SnapshotPlatform INTEGER NOT NULL DEFAULT 0"); } catch { }
 
     // ContentClash columns on BattleChallenges
     try { db.Database.ExecuteSqlRaw("ALTER TABLE BattleChallenges ADD COLUMN PrizeDescription TEXT"); } catch { /* already exists */ }

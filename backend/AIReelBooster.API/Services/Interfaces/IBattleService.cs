@@ -12,11 +12,11 @@ public interface IBattleService
 
     // Battle lifecycle
     Task<Battle?> GetBattleAsync(string battleId, CancellationToken ct = default);
-    Task<BattleEntry> SubmitEntryAsync(string battleId, string userId, string instagramHandle, string reelUrl, CancellationToken ct = default);
+    Task<BattleEntry> SubmitEntryAsync(string battleId, string userId, SubmitEntryInput input, CancellationToken ct = default);
     Task<BattleScoreResult> GetScoresAsync(string battleId, CancellationToken ct = default);
 
     // Metrics
-    Task RecordManualMetricsAsync(string entryId, string userId, MetricInput metrics, CancellationToken ct = default);
+    Task RecordManualMetricsAsync(string entryId, string userId, MetricInput metrics, BattlePlatform platform, CancellationToken ct = default);
 
     // Audience
     Task<VoteResult> VoteAsync(string battleId, string entryId, string voterToken, string? voterIp, CancellationToken ct = default);
@@ -46,13 +46,23 @@ public record CreateChallengeInput(
     string? OpponentEmail
 );
 
+public record SubmitEntryInput(
+    string InstagramUrl,
+    string? YouTubeUrl,
+    string InstagramHandle,
+    string? YouTubeHandle,
+    BattlePlatform Platform
+);
+
 public record MetricInput(long Views, long Likes, long Comments, long Saves, long Shares, long Followers);
 
 public record BattleScoreResult(
     string BattleId,
     string Status,
     DateTime EndsAt,
+    DateTime SubmissionDeadlineAt,
     int TimeLeftSeconds,
+    string Platform,
     CreatorScore Challenger,
     CreatorScore Opponent,
     AudienceVoteTally AudienceVotes
@@ -68,7 +78,12 @@ public record CreatorScore(
     long DeltaSaves,
     long DeltaShares,
     long DeltaFollowers,
-    string MetricSource
+    string MetricSource,
+    // Multi-platform breakdown (non-null when battle.Platform == Both)
+    double? InstagramScore = null,
+    double? YouTubeScore = null,
+    string SubmittedPlatform = "Instagram",
+    string ValidationStatus = "Skipped"
 );
 
 public record AudienceVoteTally(string ChallengerEntryId, int ChallengerVotes, string OpponentEntryId, int OpponentVotes);

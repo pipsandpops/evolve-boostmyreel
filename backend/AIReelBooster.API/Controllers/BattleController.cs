@@ -152,13 +152,32 @@ public class BattleController : ControllerBase
     [HttpPost("{battleId}/entry")]
     public async Task<IActionResult> SubmitEntry(string battleId, [FromBody] SubmitEntryRequest req, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(req.UserId) || string.IsNullOrWhiteSpace(req.ReelUrl))
-            return BadRequest(new { error = "userId and reelUrl are required." });
+        if (string.IsNullOrWhiteSpace(req.UserId))
+            return BadRequest(new { error = "userId is required." });
+
+        var platform = Enum.TryParse<BattlePlatform>(req.Platform ?? "Instagram", ignoreCase: true, out var pl)
+            ? pl : BattlePlatform.Instagram;
+
+        var input = new SubmitEntryInput(
+            InstagramUrl:    req.InstagramUrl ?? req.ReelUrl ?? "",   // backward compat
+            YouTubeUrl:      req.YouTubeUrl,
+            InstagramHandle: req.InstagramHandle ?? "",
+            YouTubeHandle:   req.YouTubeHandle,
+            Platform:        platform
+        );
 
         try
         {
-            var entry = await _battles.SubmitEntryAsync(battleId, req.UserId, req.InstagramHandle ?? "", req.ReelUrl, ct);
-            return Ok(new { entryId = entry.Id, message = "Reel submitted! Enter your baseline metrics." });
+            var entry = await _battles.SubmitEntryAsync(battleId, req.UserId, input, ct);
+            return Ok(new
+            {
+                entryId          = entry.Id,
+                submittedPlatform = entry.SubmittedPlatform.ToString(),
+                validationStatus = entry.ValidationStatus.ToString(),
+                message          = platform == BattlePlatform.Both
+                    ? "Content submitted on both platforms! Enter your baseline metrics for each."
+                    : $"Reel submitted on {platform}! Enter your baseline metrics.",
+            });
         }
         catch (InvalidOperationException ex) { return Conflict(new { error = ex.Message }); }
         catch (Exception ex) { return StatusCode(500, new { error = ex.Message }); }
@@ -187,11 +206,15 @@ public class BattleController : ControllerBase
         if (string.IsNullOrWhiteSpace(req.UserId) || string.IsNullOrWhiteSpace(req.EntryId))
             return BadRequest(new { error = "userId and entryId are required." });
 
+        var platform = Enum.TryParse<BattlePlatform>(req.Platform ?? "Instagram", ignoreCase: true, out var pl)
+            ? pl : BattlePlatform.Instagram;
+
         try
         {
             await _battles.RecordManualMetricsAsync(req.EntryId, req.UserId,
-                new MetricInput(req.Views, req.Likes, req.Comments, req.Saves, req.Shares, req.Followers), ct);
-            return Ok(new { message = "Metrics recorded." });
+                new MetricInput(req.Views, req.Likes, req.Comments, req.Saves, req.Shares, req.Followers),
+                platform, ct);
+            return Ok(new { message = $"{platform} metrics recorded." });
         }
         catch (InvalidOperationException ex) { return Conflict(new { error = ex.Message }); }
         catch (UnauthorizedAccessException) { return Forbid(); }
@@ -243,6 +266,22 @@ public record CreateChallengeRequest(
     string? OpponentEmail
 );
 public record AcceptChallengeRequest(string OpponentUserId);
-public record SubmitEntryRequest(string UserId, string ReelUrl, string? InstagramHandle);
-public record ManualMetricRequest(string UserId, string EntryId, long Views, long Likes, long Comments, long Saves, long Shares, long Followers);
+
+public record SubmitEntryRequest(
+    string UserId,
+    string? Platform,        // "Instagram" | "YouTube" | "Both"
+    string? InstagramUrl,    // Instagram Reel URL
+    string? YouTubeUrl,      // YouTube Shorts URL
+    string? InstagramHandle,
+    string? YouTubeHandle,
+    string? ReelUrl          // backward-compat alias for InstagramUrl
+);
+
+public record ManualMetricRequest(
+    string UserId,
+    string EntryId,
+    long Views, long Likes, long Comments, long Saves, long Shares, long Followers,
+    string? Platform         // "Instagram" | "YouTube" — default Instagram
+);
+
 public record VoteRequest(string EntryId, string VoterToken);
