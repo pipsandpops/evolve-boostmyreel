@@ -89,6 +89,7 @@ builder.Services.AddScoped<IBattleService, BattleService>();
 builder.Services.AddHostedService<BattleExpiryWorker>();
 builder.Services.AddHttpClient<IPrizePoolService, PrizePoolService>();
 builder.Services.AddScoped<IBrandAnalyticsService, BrandAnalyticsService>();
+builder.Services.AddScoped<IBrandCampaignService, BrandCampaignService>();
 
 // ── ImageGrowthEngine ─────────────────────────────────────────────────────────
 builder.Services.AddSingleton<ImageJobStore>();
@@ -310,6 +311,44 @@ using (var scope = app.Services.CreateScope())
             RazorpayPaymentId TEXT,
             Verified          INTEGER NOT NULL DEFAULT 0,
             CreatedAt         TEXT NOT NULL DEFAULT (datetime('now'))
+        )
+        """);
+
+    // ── Brand Campaign tables ─────────────────────────────────────────────
+    db.Database.ExecuteSqlRaw("""
+        CREATE TABLE IF NOT EXISTS BrandCampaigns (
+            Id                TEXT NOT NULL PRIMARY KEY,
+            BrandUserId       TEXT NOT NULL,
+            BrandName         TEXT NOT NULL DEFAULT '',
+            Title             TEXT NOT NULL,
+            Description       TEXT,
+            ThemeHashtag      TEXT,
+            ContentGuidelines TEXT,
+            PrizeAmount       REAL NOT NULL DEFAULT 0,
+            PrizeCurrency     TEXT NOT NULL DEFAULT 'INR',
+            PrizeDescription  TEXT,
+            MaxEntries        INTEGER NOT NULL DEFAULT 20,
+            JoinCode          TEXT NOT NULL,
+            Status            INTEGER NOT NULL DEFAULT 0,
+            StartsAt          TEXT NOT NULL DEFAULT (datetime('now')),
+            EndsAt            TEXT NOT NULL,
+            WinnerEntryId     TEXT,
+            PrizePaid         INTEGER NOT NULL DEFAULT 0,
+            CreatedAt         TEXT NOT NULL DEFAULT (datetime('now'))
+        )
+        """);
+
+    db.Database.ExecuteSqlRaw("""
+        CREATE TABLE IF NOT EXISTS BrandCampaignEntries (
+            Id             TEXT NOT NULL PRIMARY KEY,
+            CampaignId     TEXT NOT NULL,
+            CreatorUserId  TEXT NOT NULL,
+            CreatorHandle  TEXT NOT NULL,
+            ReelUrl        TEXT NOT NULL,
+            Platform       TEXT NOT NULL DEFAULT 'Instagram',
+            BaselineViews  INTEGER NOT NULL DEFAULT 0,
+            PaymentHandle  TEXT,
+            SubmittedAt    TEXT NOT NULL DEFAULT (datetime('now'))
         )
         """);
 

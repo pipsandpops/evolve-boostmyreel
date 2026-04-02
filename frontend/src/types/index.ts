@@ -418,6 +418,74 @@ export interface BoosterRow {
   totalSpent: number;
 }
 
+// ── Brand Campaigns ───────────────────────────────────────────────────────────
+
+export interface CampaignLeaderboardEntry {
+  rank: number;
+  entryId: string;
+  creatorHandle: string;
+  reelUrl: string;
+  platform: string;
+  votes: number;
+  isWinner: boolean;
+}
+
+export interface CampaignDetail {
+  id: string;
+  brandUserId: string;
+  brandName: string;
+  title: string;
+  description: string | null;
+  themeHashtag: string | null;
+  contentGuidelines: string | null;
+  prizeAmount: number;
+  prizeCurrency: string;
+  prizeDescription: string | null;
+  maxEntries: number;
+  entryCount: number;
+  joinCode: string;
+  status: 'Active' | 'Ended' | 'PaidOut';
+  startsAt: string;
+  endsAt: string;
+  prizePaid: boolean;
+  winnerEntryId: string | null;
+  entries: CampaignLeaderboardEntry[];
+}
+
+export interface CampaignSummary {
+  id: string;
+  title: string;
+  themeHashtag: string | null;
+  prizeAmount: number;
+  prizeCurrency: string;
+  joinCode: string;
+  status: 'Active' | 'Ended' | 'PaidOut';
+  endsAt: string;
+  entryCount: number;
+  totalVotes: number;
+}
+
+export interface CreateCampaignPayload {
+  brandUserId: string;
+  brandName: string;
+  title: string;
+  description?: string;
+  themeHashtag?: string;
+  contentGuidelines?: string;
+  prizeAmount: number;
+  prizeCurrency: string;
+  prizeDescription?: string;
+  durationHours: number;
+}
+
+export interface JoinCampaignPayload {
+  creatorHandle: string;
+  reelUrl: string;
+  platform: string;
+  creatorUserId: string;
+  paymentHandle?: string;
+}
+
 // ── Brand Analytics ───────────────────────────────────────────────────────────
 
 export interface BenchmarkComparison {
