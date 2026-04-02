@@ -213,7 +213,7 @@ function BattleArena({
 
   if (!scores) return null;
 
-  const { challenger, opponent, audienceVotes, timeLeftSeconds, status } = scores;
+  const { challenger, opponent, audienceVotes, timeLeftSeconds, status, scoreGap, leader, momentumAlert } = scores;
   const isMyChallenger = userId === challenger.userId;
   const isMyOpponent   = userId === opponent.userId;
   const isParticipant  = isMyChallenger || isMyOpponent;
@@ -352,6 +352,27 @@ function BattleArena({
           </div>
         ))}
       </div>
+
+      {/* Score gap banner */}
+      {status === 'Active' && scoreGap > 0 && leader && (
+        <div className="bg-orange-900/30 border border-orange-500/30 rounded-2xl px-4 py-3 flex items-center gap-3">
+          <span className="text-2xl">🔥</span>
+          <div>
+            <p className="text-orange-300 font-bold text-sm">
+              @{leader} is leading by {scoreGap.toFixed(0)} pts
+            </p>
+            <p className="text-xs text-slate-400">Live scores update every 30 minutes</p>
+          </div>
+        </div>
+      )}
+
+      {/* Momentum alert */}
+      {momentumAlert && (
+        <div className="bg-yellow-900/30 border border-yellow-500/30 rounded-2xl px-4 py-3 flex items-center gap-3">
+          <span className="text-2xl">⚡</span>
+          <p className="text-yellow-300 font-semibold text-sm">{momentumAlert}</p>
+        </div>
+      )}
 
       {voteMsg && (
         <p className="text-center text-sm text-purple-300">{voteMsg}</p>

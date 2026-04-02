@@ -308,6 +308,10 @@ export interface BattleScoreResult {
     challenger: CreatorScore;
     opponent: CreatorScore;
     audienceVotes: AudienceVoteTally;
+    // Live insight fields
+    scoreGap: number;
+    leader: string | null;
+    momentumAlert: string | null;
   };
 }
 

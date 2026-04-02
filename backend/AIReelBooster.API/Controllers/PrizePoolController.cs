@@ -27,13 +27,15 @@ public class PrizePoolController : ControllerBase
             return BadRequest(new { error = "challengeId is required." });
         if (string.IsNullOrWhiteSpace(req.BrandUserId))
             return BadRequest(new { error = "brandUserId is required." });
-        if (req.Amount <= 0 && req.Tier == PrizePoolTier.Custom)
+        var tier = Enum.TryParse<PrizePoolTier>(req.Tier?.ToString(), ignoreCase: true, out var t) ? t : PrizePoolTier.Custom;
+
+        if (req.Amount <= 0 && tier == PrizePoolTier.Custom)
             return BadRequest(new { error = "amount is required for Custom tier." });
 
         try
         {
             var pool = await _prizes.CreatePrizePoolAsync(new(
-                req.ChallengeId, req.BrandUserId, req.Tier,
+                req.ChallengeId, req.BrandUserId, tier,
                 req.Amount, req.Currency ?? "INR", req.NonCashPrizes), ct);
 
             return Ok(new
@@ -161,7 +163,7 @@ public class PrizePoolController : ControllerBase
 public record CreatePrizePoolRequest(
     string ChallengeId,
     string BrandUserId,
-    PrizePoolTier Tier,
+    object? Tier,           // accepts "Custom", "Starter" etc. as string or int
     decimal Amount,
     string? Currency,
     string? NonCashPrizes
