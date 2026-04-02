@@ -5,7 +5,7 @@ namespace AIReelBooster.API.Services.Interfaces;
 public interface IBattleService
 {
     // Challenge lifecycle
-    Task<BattleChallenge> CreateChallengeAsync(string challengerId, string opponentHandle, string? trashTalk, string? opponentEmail, string? prizeDescription, CancellationToken ct = default);
+    Task<BattleChallenge> CreateChallengeAsync(CreateChallengeInput input, CancellationToken ct = default);
     Task<Battle> AcceptChallengeAsync(string challengeId, string opponentUserId, CancellationToken ct = default);
     Task DeclineChallengeAsync(string challengeId, CancellationToken ct = default);
     Task<BattleChallenge?> GetChallengeAsync(string challengeId, CancellationToken ct = default);
@@ -30,6 +30,21 @@ public interface IBattleService
 }
 
 // ── Value objects ─────────────────────────────────────────────────────────────
+
+public record CreateChallengeInput(
+    string ChallengerId,
+    string OpponentHandle,
+    string? BattleTitle,
+    int DurationHours,          // 24 | 48 | 168
+    string Platform,            // "Instagram" | "YouTube" | "Both"
+    string? ThemeHashtag,
+    decimal? PrizePoolAmount,
+    string? PrizeCurrency,
+    string? ContentGuidelines,
+    string? TrashTalkMsg,
+    string? PrizeDescription,
+    string? OpponentEmail
+);
 
 public record MetricInput(long Views, long Likes, long Comments, long Saves, long Shares, long Followers);
 

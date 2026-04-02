@@ -1,4 +1,5 @@
 using AIReelBooster.API.Configuration;
+using AIReelBooster.API.Models.Domain;
 using AIReelBooster.API.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -29,25 +30,41 @@ public class BattleController : ControllerBase
             return BadRequest(new { error = "challengerId is required." });
         if (string.IsNullOrWhiteSpace(req.OpponentHandle))
             return BadRequest(new { error = "opponentHandle is required." });
+        if (req.DurationHours is not (24 or 48 or 168))
+            return BadRequest(new { error = "durationHours must be 24, 48, or 168." });
 
         try
         {
-            var challenge = await _battles.CreateChallengeAsync(
-                req.ChallengerId, req.OpponentHandle, req.TrashTalkMsg, req.OpponentEmail, req.PrizeDescription, ct);
+            var challenge = await _battles.CreateChallengeAsync(new CreateChallengeInput(
+                req.ChallengerId, req.OpponentHandle, req.BattleTitle,
+                req.DurationHours, req.Platform ?? "Instagram",
+                req.ThemeHashtag, req.PrizePoolAmount, req.PrizeCurrency,
+                req.ContentGuidelines, req.TrashTalkMsg, req.PrizeDescription,
+                req.OpponentEmail), ct);
 
             var battleLink = $"{_frontendBase}/battle/{challenge.Id}";
             var waText     = Uri.EscapeDataString(
                 $"⚔️ You've been challenged to a 24hr Reel Battle! Accept or forfeit 😏\n{battleLink}");
 
+            var handle = req.OpponentHandle.TrimStart('@');
             return Ok(new
             {
-                challengeId   = challenge.Id,
+                challengeId       = challenge.Id,
                 battleLink,
-                whatsappLink  = $"https://wa.me/?text={waText}",
-                instagramDmLink = $"https://ig.me/m/{req.OpponentHandle.TrimStart('@')}",
-                expiresAt        = challenge.ExpiresAt,
-                trashTalkMsg     = challenge.TrashTalkMsg,
-                prizeDescription = challenge.PrizeDescription,
+                whatsappLink      = $"https://wa.me/?text={waText}",
+                instagramDmLink   = $"https://ig.me/m/{handle}",
+                youtubeDmLink     = challenge.Platform != BattlePlatform.Instagram
+                                    ? $"https://youtube.com/@{handle}" : null,
+                expiresAt         = challenge.ExpiresAt,
+                battleTitle       = challenge.BattleTitle,
+                durationHours     = challenge.DurationHours,
+                platform          = challenge.Platform.ToString(),
+                themeHashtag      = challenge.ThemeHashtag,
+                prizePoolAmount   = challenge.PrizePoolAmount,
+                prizeCurrency     = challenge.PrizeCurrency,
+                contentGuidelines = challenge.ContentGuidelines,
+                trashTalkMsg      = challenge.TrashTalkMsg,
+                prizeDescription  = challenge.PrizeDescription,
             });
         }
         catch (Exception ex)
@@ -68,14 +85,21 @@ public class BattleController : ControllerBase
         {
             return Ok(new
             {
-                type          = "challenge",
-                challengeId   = challenge.Id,
-                battleId      = challenge.BattleId,
+                type           = "challenge",
+                challengeId    = challenge.Id,
+                battleId       = challenge.BattleId,
                 opponentHandle = challenge.OpponentHandle,
-                trashTalkMsg  = challenge.TrashTalkMsg,
-                status           = challenge.Status.ToString(),
-                expiresAt        = challenge.ExpiresAt,
-                prizeDescription = challenge.PrizeDescription,
+                status         = challenge.Status.ToString(),
+                expiresAt         = challenge.ExpiresAt,
+                battleTitle       = challenge.BattleTitle,
+                durationHours     = challenge.DurationHours,
+                platform          = challenge.Platform.ToString(),
+                themeHashtag      = challenge.ThemeHashtag,
+                prizePoolAmount   = challenge.PrizePoolAmount,
+                prizeCurrency     = challenge.PrizeCurrency,
+                contentGuidelines = challenge.ContentGuidelines,
+                trashTalkMsg      = challenge.TrashTalkMsg,
+                prizeDescription  = challenge.PrizeDescription,
             });
         }
 
@@ -204,7 +228,20 @@ public class BattleController : ControllerBase
 
 // ── Request models ────────────────────────────────────────────────────────────
 
-public record CreateChallengeRequest(string ChallengerId, string OpponentHandle, string? TrashTalkMsg, string? OpponentEmail, string? PrizeDescription);
+public record CreateChallengeRequest(
+    string ChallengerId,
+    string OpponentHandle,
+    string? BattleTitle,
+    int DurationHours,
+    string Platform,
+    string? ThemeHashtag,
+    decimal? PrizePoolAmount,
+    string? PrizeCurrency,
+    string? ContentGuidelines,
+    string? TrashTalkMsg,
+    string? PrizeDescription,
+    string? OpponentEmail
+);
 public record AcceptChallengeRequest(string OpponentUserId);
 public record SubmitEntryRequest(string UserId, string ReelUrl, string? InstagramHandle);
 public record ManualMetricRequest(string UserId, string EntryId, long Views, long Likes, long Comments, long Saves, long Shares, long Followers);

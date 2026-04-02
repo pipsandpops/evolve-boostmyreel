@@ -4,18 +4,30 @@ namespace AIReelBooster.API.Models.Domain;
 
 public enum ChallengeStatus { Pending, Accepted, Declined, Expired }
 
+public enum BattlePlatform { Instagram, YouTube, Both }
+
 public class BattleChallenge
 {
     public string Id               { get; set; } = Guid.NewGuid().ToString("N");
     public string ChallengerId     { get; set; } = string.Empty;   // bmr userId
-    public string OpponentHandle   { get; set; } = string.Empty;   // @instagram
+    public string OpponentHandle   { get; set; } = string.Empty;   // @instagram / @youtube
     public string? OpponentEmail   { get; set; }
-    public string? TrashTalkMsg    { get; set; }                    // max 100 chars
-    public string? PrizeDescription { get; set; }                   // e.g. "₹500 via UPI" — max 100 chars
+
+    // ContentClash fields
+    public string? BattleTitle       { get; set; }                  // e.g. "Pepsi vs @BeingIndian — Who Rules Summer?"
+    public int     DurationHours     { get; set; } = 24;            // 24 / 48 / 168 (7 days)
+    public BattlePlatform Platform   { get; set; } = BattlePlatform.Instagram;
+    public string? ThemeHashtag      { get; set; }                  // e.g. #PepsiClash
+    public decimal? PrizePoolAmount  { get; set; }                  // numeric prize set by brand
+    public string? PrizeCurrency     { get; set; } = "INR";
+    public string? ContentGuidelines { get; set; }                  // e.g. "Reel must feature product in first 3 seconds"
+    public string? TrashTalkMsg      { get; set; }                  // max 100 chars
+    public string? PrizeDescription  { get; set; }                  // free-text prize (Option C)
+
     public ChallengeStatus Status  { get; set; } = ChallengeStatus.Pending;
     public string? BattleId        { get; set; }                    // set on Accept
     public DateTime CreatedAt      { get; set; } = DateTime.UtcNow;
-    public DateTime ExpiresAt      { get; set; } = DateTime.UtcNow.AddHours(24);
+    public DateTime ExpiresAt      { get; set; } = DateTime.UtcNow.AddHours(48); // 48h accept window
 }
 
 // ── Live battle ───────────────────────────────────────────────────────────────
@@ -30,9 +42,17 @@ public class Battle
     public string OpponentUserId     { get; set; } = string.Empty;
     public BattleStatus Status       { get; set; } = BattleStatus.Active;
     public DateTime StartedAt        { get; set; } = DateTime.UtcNow;
-    public DateTime EndsAt           { get; set; } = DateTime.UtcNow.AddHours(24);
+    public DateTime EndsAt           { get; set; } = DateTime.UtcNow.AddHours(24); // overridden by DurationHours
     public string? WinnerUserId      { get; set; }
     public DateTime CreatedAt        { get; set; } = DateTime.UtcNow;
+
+    // Denormalised from challenge for quick access
+    public string? BattleTitle       { get; set; }
+    public BattlePlatform Platform   { get; set; } = BattlePlatform.Instagram;
+    public string? ThemeHashtag      { get; set; }
+    public decimal? PrizePoolAmount  { get; set; }
+    public string? PrizeCurrency     { get; set; }
+    public string? ContentGuidelines { get; set; }
 }
 
 // ── Creator's reel entry ──────────────────────────────────────────────────────

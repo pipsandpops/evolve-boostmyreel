@@ -160,8 +160,23 @@ using (var scope = app.Services.CreateScope())
     // Add Email column to UserPlans if not exists (safe for existing DBs)
     try { db.Database.ExecuteSqlRaw("ALTER TABLE UserPlans ADD COLUMN Email TEXT"); } catch { /* already exists */ }
 
-    // Add PrizeDescription to BattleChallenges if not exists
+    // ContentClash columns on BattleChallenges
     try { db.Database.ExecuteSqlRaw("ALTER TABLE BattleChallenges ADD COLUMN PrizeDescription TEXT"); } catch { /* already exists */ }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE BattleChallenges ADD COLUMN BattleTitle TEXT"); } catch { }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE BattleChallenges ADD COLUMN DurationHours INTEGER NOT NULL DEFAULT 24"); } catch { }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE BattleChallenges ADD COLUMN Platform INTEGER NOT NULL DEFAULT 0"); } catch { }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE BattleChallenges ADD COLUMN ThemeHashtag TEXT"); } catch { }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE BattleChallenges ADD COLUMN PrizePoolAmount TEXT"); } catch { }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE BattleChallenges ADD COLUMN PrizeCurrency TEXT NOT NULL DEFAULT 'INR'"); } catch { }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE BattleChallenges ADD COLUMN ContentGuidelines TEXT"); } catch { }
+
+    // ContentClash columns on Battles (denormalised)
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE Battles ADD COLUMN BattleTitle TEXT"); } catch { }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE Battles ADD COLUMN Platform INTEGER NOT NULL DEFAULT 0"); } catch { }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE Battles ADD COLUMN ThemeHashtag TEXT"); } catch { }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE Battles ADD COLUMN PrizePoolAmount TEXT"); } catch { }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE Battles ADD COLUMN PrizeCurrency TEXT"); } catch { }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE Battles ADD COLUMN ContentGuidelines TEXT"); } catch { }
 
     // ── Battle tables ────────────────────────────────────────────────────────
     db.Database.ExecuteSqlRaw("""

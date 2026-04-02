@@ -31,32 +31,36 @@ public class BattleService : IBattleService
     // ── Challenge ─────────────────────────────────────────────────────────────
 
     public async Task<BattleChallenge> CreateChallengeAsync(
-        string challengerId, string opponentHandle, string? trashTalk, string? opponentEmail, string? prizeDescription,
-        CancellationToken ct = default)
+        CreateChallengeInput input, CancellationToken ct = default)
     {
-        var handle = opponentHandle.TrimStart('@').ToLowerInvariant();
-
-        if (trashTalk?.Length > 100)
-            trashTalk = trashTalk[..100];
-
-        var prize = prizeDescription?.Trim();
-        if (prize?.Length > 100) prize = prize[..100];
+        var handle    = input.OpponentHandle.TrimStart('@').ToLowerInvariant();
+        var trashTalk = input.TrashTalkMsg?.Length > 100 ? input.TrashTalkMsg[..100] : input.TrashTalkMsg;
+        var prize     = input.PrizeDescription?.Trim() is { Length: > 100 } p ? p[..100] : input.PrizeDescription?.Trim();
+        var duration  = input.DurationHours is 24 or 48 or 168 ? input.DurationHours : 24;
+        var platform  = Enum.TryParse<BattlePlatform>(input.Platform, ignoreCase: true, out var pl) ? pl : BattlePlatform.Instagram;
 
         var challenge = new BattleChallenge
         {
-            ChallengerId     = challengerId,
-            OpponentHandle   = handle,
-            OpponentEmail    = opponentEmail?.Trim().ToLowerInvariant(),
-            TrashTalkMsg     = trashTalk,
-            PrizeDescription = prize,
-            ExpiresAt        = DateTime.UtcNow.AddHours(24),
+            ChallengerId      = input.ChallengerId,
+            OpponentHandle    = handle,
+            OpponentEmail     = input.OpponentEmail?.Trim().ToLowerInvariant(),
+            BattleTitle       = input.BattleTitle?.Trim(),
+            DurationHours     = duration,
+            Platform          = platform,
+            ThemeHashtag      = input.ThemeHashtag?.Trim().TrimStart('#'),
+            PrizePoolAmount   = input.PrizePoolAmount,
+            PrizeCurrency     = input.PrizeCurrency ?? "INR",
+            ContentGuidelines = input.ContentGuidelines?.Trim(),
+            TrashTalkMsg      = trashTalk,
+            PrizeDescription  = prize,
+            ExpiresAt         = DateTime.UtcNow.AddHours(48), // 48h accept window
         };
 
         _db.BattleChallenges.Add(challenge);
         await _db.SaveChangesAsync(ct);
 
-        _logger.LogInformation("Battle challenge {Id} created by {User} vs @{Opponent}",
-            challenge.Id, challengerId, handle);
+        _logger.LogInformation("ContentClash challenge {Id} created by {User} vs @{Opponent} — {Duration}h on {Platform}",
+            challenge.Id, input.ChallengerId, handle, duration, platform);
 
         return challenge;
     }
@@ -79,11 +83,17 @@ public class BattleService : IBattleService
 
         var battle = new Battle
         {
-            ChallengeId      = challengeId,
-            ChallengerUserId = challenge.ChallengerId,
-            OpponentUserId   = opponentUserId,
-            StartedAt        = DateTime.UtcNow,
-            EndsAt           = DateTime.UtcNow.AddHours(24),
+            ChallengeId       = challengeId,
+            ChallengerUserId  = challenge.ChallengerId,
+            OpponentUserId    = opponentUserId,
+            StartedAt         = DateTime.UtcNow,
+            EndsAt            = DateTime.UtcNow.AddHours(challenge.DurationHours),
+            BattleTitle       = challenge.BattleTitle,
+            Platform          = challenge.Platform,
+            ThemeHashtag      = challenge.ThemeHashtag,
+            PrizePoolAmount   = challenge.PrizePoolAmount,
+            PrizeCurrency     = challenge.PrizeCurrency,
+            ContentGuidelines = challenge.ContentGuidelines,
         };
 
         challenge.Status   = ChallengeStatus.Accepted;

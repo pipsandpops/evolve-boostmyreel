@@ -240,7 +240,15 @@ export interface CreateChallengeResponse {
   battleLink: string;
   whatsappLink: string;
   instagramDmLink: string;
+  youtubeDmLink: string | null;
   expiresAt: string;
+  battleTitle: string | null;
+  durationHours: number;
+  platform: string;
+  themeHashtag: string | null;
+  prizePoolAmount: number | null;
+  prizeCurrency: string | null;
+  contentGuidelines: string | null;
   trashTalkMsg: string | null;
   prizeDescription: string | null;
 }
@@ -250,6 +258,13 @@ export interface ChallengeStatus {
   challengeId: string;
   battleId: string | null;
   opponentHandle: string;
+  battleTitle: string | null;
+  durationHours: number;
+  platform: string;
+  themeHashtag: string | null;
+  prizePoolAmount: number | null;
+  prizeCurrency: string | null;
+  contentGuidelines: string | null;
   trashTalkMsg: string | null;
   prizeDescription: string | null;
   status: 'Pending' | 'Accepted' | 'Declined' | 'Expired';
