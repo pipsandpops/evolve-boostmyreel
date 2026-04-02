@@ -130,7 +130,7 @@ public class BattleController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "AcceptChallenge failed");
-            return StatusCode(500, new { error = ex.Message });
+            return StatusCode(500, new { error = ex.Message, detail = ex.InnerException?.Message });
         }
     }
 
