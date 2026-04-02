@@ -24,6 +24,9 @@ public class BattleExpiryWorker : BackgroundService
                 using var scope = _services.CreateScope();
                 var battles = scope.ServiceProvider.GetRequiredService<IBattleService>();
                 await battles.ExpireStaleItemsAsync(stoppingToken);
+
+                var prizes = scope.ServiceProvider.GetRequiredService<IPrizePoolService>();
+                await prizes.DistributeAllPendingAsync(stoppingToken);
             }
             catch (Exception ex)
             {

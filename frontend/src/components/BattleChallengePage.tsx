@@ -39,6 +39,10 @@ export function BattleChallengePage({ userId, onBack }: Props) {
   const [result, setResult]         = useState<CreateChallengeResponse | null>(null);
   const [copied, setCopied]         = useState(false);
 
+  // Prize pool escrow state
+  const [poolStatus, setPoolStatus] = useState<'idle' | 'creating' | 'paying' | 'paid' | 'error'>('idle');
+  const [poolError, setPoolError]   = useState<string | null>(null);
+
   async function handleCreate() {
     if (!handle.trim()) { setError("Enter your opponent's Instagram / YouTube handle."); return; }
     setError(null);
@@ -62,6 +66,50 @@ export function BattleChallengePage({ userId, onBack }: Props) {
       setError(err instanceof Error ? err.message : 'Failed to create challenge.');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function fundPrizePool() {
+    if (!result) return;
+    setPoolStatus('creating');
+    setPoolError(null);
+    try {
+      // 1. Create pool record
+      const pool = await api.createPrizePool(
+        result.challengeId,
+        userId,
+        'Custom',
+        result.prizePoolAmount!,
+        result.prizeCurrency ?? 'INR',
+      );
+
+      // 2. Create Razorpay order
+      setPoolStatus('paying');
+      const order = await api.createPrizePoolPaymentOrder(pool.prizePoolId);
+
+      // 3. Open Razorpay checkout
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const Razorpay = (window as any).Razorpay;
+      if (!Razorpay) throw new Error('Razorpay SDK not loaded');
+
+      const rzp = new Razorpay({
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID ?? '',
+        amount: order.amount * 100,
+        currency: result.prizeCurrency ?? 'INR',
+        order_id: order.orderId,
+        name: 'BoostMyReel',
+        description: `Prize Pool — ${result.battleTitle ?? 'ContentClash'}`,
+        handler: async (response: { razorpay_payment_id: string; razorpay_signature: string }) => {
+          await api.confirmPrizePoolPayment(pool.prizePoolId, response.razorpay_payment_id, response.razorpay_signature);
+          setPoolStatus('paid');
+        },
+        modal: { ondismiss: () => setPoolStatus('idle') },
+        theme: { color: '#7c3aed' },
+      });
+      rzp.open();
+    } catch (err) {
+      setPoolError(err instanceof Error ? err.message : 'Payment failed.');
+      setPoolStatus('error');
     }
   }
 
@@ -96,11 +144,38 @@ export function BattleChallengePage({ userId, onBack }: Props) {
           )}
 
           {result.prizePoolAmount && (
-            <div className="bg-yellow-900/30 border border-yellow-500/30 rounded-xl p-3 mb-3 flex items-center justify-center gap-2">
-              <span>🏆</span>
-              <span className="text-yellow-300 font-bold">
-                Prize Pool: {result.prizeCurrency} {result.prizePoolAmount.toLocaleString()}
-              </span>
+            <div className="bg-yellow-900/30 border border-yellow-500/30 rounded-xl p-4 mb-3">
+              {poolStatus === 'paid' ? (
+                <div className="text-center">
+                  <div className="text-2xl mb-1">💰</div>
+                  <p className="text-green-400 font-bold text-sm">Prize pool funded &amp; held in escrow!</p>
+                  <p className="text-yellow-300 font-semibold">{result.prizeCurrency} {result.prizePoolAmount.toLocaleString()}</p>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <span>🏆</span>
+                    <span className="text-yellow-300 font-bold">
+                      Prize Pool: {result.prizeCurrency} {result.prizePoolAmount.toLocaleString()}
+                    </span>
+                  </div>
+                  <p className="text-slate-400 text-xs mb-3 text-center">Deposit funds into escrow — auto-released to winner after battle ends</p>
+                  <div className="text-xs text-slate-400 mb-3 space-y-1">
+                    <div className="flex justify-between"><span>🥇 Winner</span><span className="text-yellow-300">40%</span></div>
+                    <div className="flex justify-between"><span>🥈 Runner-up</span><span className="text-yellow-300">10%</span></div>
+                    <div className="flex justify-between"><span>🗳️ Top 10 Voters</span><span className="text-yellow-300">30% shared</span></div>
+                    <div className="flex justify-between"><span>⚙️ Platform</span><span className="text-yellow-300">20%</span></div>
+                  </div>
+                  {poolError && <p className="text-red-400 text-xs mb-2">{poolError}</p>}
+                  <button
+                    onClick={fundPrizePool}
+                    disabled={poolStatus === 'creating' || poolStatus === 'paying'}
+                    className="w-full bg-yellow-500 hover:bg-yellow-400 disabled:opacity-50 text-black font-bold py-2 rounded-xl text-sm transition-colors"
+                  >
+                    {poolStatus === 'creating' ? 'Setting up...' : poolStatus === 'paying' ? 'Opening payment...' : '💳 Fund Prize Pool'}
+                  </button>
+                </>
+              )}
             </div>
           )}
 
