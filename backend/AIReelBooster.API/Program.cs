@@ -197,64 +197,89 @@ using (var scope = app.Services.CreateScope())
     // ── Battle tables ────────────────────────────────────────────────────────
     db.Database.ExecuteSqlRaw("""
         CREATE TABLE IF NOT EXISTS BattleChallenges (
-            Id             TEXT NOT NULL PRIMARY KEY,
-            ChallengerId   TEXT NOT NULL,
-            OpponentHandle TEXT NOT NULL,
-            OpponentEmail  TEXT,
-            TrashTalkMsg   TEXT,
-            Status         INTEGER NOT NULL DEFAULT 0,
-            BattleId       TEXT,
-            CreatedAt      TEXT NOT NULL DEFAULT (datetime('now')),
-            ExpiresAt      TEXT NOT NULL
+            Id                TEXT NOT NULL PRIMARY KEY,
+            ChallengerId      TEXT NOT NULL,
+            OpponentHandle    TEXT NOT NULL,
+            OpponentEmail     TEXT,
+            TrashTalkMsg      TEXT,
+            Status            INTEGER NOT NULL DEFAULT 0,
+            BattleId          TEXT,
+            CreatedAt         TEXT NOT NULL DEFAULT (datetime('now')),
+            ExpiresAt         TEXT NOT NULL,
+            PrizeDescription  TEXT,
+            BattleTitle       TEXT,
+            DurationHours     INTEGER NOT NULL DEFAULT 24,
+            Platform          INTEGER NOT NULL DEFAULT 0,
+            ThemeHashtag      TEXT,
+            PrizePoolAmount   TEXT,
+            PrizeCurrency     TEXT NOT NULL DEFAULT 'INR',
+            ContentGuidelines TEXT
         )
         """);
 
     db.Database.ExecuteSqlRaw("""
         CREATE TABLE IF NOT EXISTS Battles (
-            Id               TEXT NOT NULL PRIMARY KEY,
-            ChallengeId      TEXT NOT NULL,
-            ChallengerUserId TEXT NOT NULL,
-            OpponentUserId   TEXT NOT NULL,
-            Status           INTEGER NOT NULL DEFAULT 0,
-            StartedAt        TEXT NOT NULL,
-            EndsAt           TEXT NOT NULL,
-            WinnerUserId     TEXT,
-            CreatedAt        TEXT NOT NULL DEFAULT (datetime('now'))
+            Id                   TEXT NOT NULL PRIMARY KEY,
+            ChallengeId          TEXT NOT NULL,
+            ChallengerUserId     TEXT NOT NULL,
+            OpponentUserId       TEXT NOT NULL,
+            Status               INTEGER NOT NULL DEFAULT 0,
+            StartedAt            TEXT NOT NULL,
+            EndsAt               TEXT NOT NULL,
+            SubmissionDeadlineAt TEXT NOT NULL DEFAULT (datetime('now', '+2 hours')),
+            WinnerUserId         TEXT,
+            CreatedAt            TEXT NOT NULL DEFAULT (datetime('now')),
+            BattleTitle          TEXT,
+            Platform             INTEGER NOT NULL DEFAULT 0,
+            ThemeHashtag         TEXT,
+            PrizePoolAmount      TEXT,
+            PrizeCurrency        TEXT,
+            ContentGuidelines    TEXT
         )
         """);
 
     db.Database.ExecuteSqlRaw("""
         CREATE TABLE IF NOT EXISTS BattleEntries (
-            Id                TEXT NOT NULL PRIMARY KEY,
-            BattleId          TEXT NOT NULL,
-            UserId            TEXT NOT NULL,
-            InstagramHandle   TEXT NOT NULL,
-            ReelUrl           TEXT NOT NULL,
-            ReelPostId        TEXT,
-            BaselineViews     INTEGER NOT NULL DEFAULT 0,
-            BaselineLikes     INTEGER NOT NULL DEFAULT 0,
-            BaselineComments  INTEGER NOT NULL DEFAULT 0,
-            BaselineSaves     INTEGER NOT NULL DEFAULT 0,
-            BaselineShares    INTEGER NOT NULL DEFAULT 0,
-            BaselineFollowers INTEGER NOT NULL DEFAULT 0,
-            SubmittedAt       TEXT NOT NULL DEFAULT (datetime('now'))
+            Id                  TEXT NOT NULL PRIMARY KEY,
+            BattleId            TEXT NOT NULL,
+            UserId              TEXT NOT NULL,
+            InstagramHandle     TEXT NOT NULL,
+            ReelUrl             TEXT NOT NULL,
+            ReelPostId          TEXT,
+            SubmittedPlatform   INTEGER NOT NULL DEFAULT 0,
+            YouTubeUrl          TEXT,
+            YouTubeHandle       TEXT,
+            ValidationStatus    INTEGER NOT NULL DEFAULT 0,
+            ValidationNotes     TEXT,
+            BaselineViews       INTEGER NOT NULL DEFAULT 0,
+            BaselineLikes       INTEGER NOT NULL DEFAULT 0,
+            BaselineComments    INTEGER NOT NULL DEFAULT 0,
+            BaselineSaves       INTEGER NOT NULL DEFAULT 0,
+            BaselineShares      INTEGER NOT NULL DEFAULT 0,
+            BaselineFollowers   INTEGER NOT NULL DEFAULT 0,
+            YtBaselineViews     INTEGER NOT NULL DEFAULT 0,
+            YtBaselineLikes     INTEGER NOT NULL DEFAULT 0,
+            YtBaselineComments  INTEGER NOT NULL DEFAULT 0,
+            YtBaselineFollowers INTEGER NOT NULL DEFAULT 0,
+            SubmittedAt         TEXT NOT NULL DEFAULT (datetime('now'))
         )
         """);
 
     db.Database.ExecuteSqlRaw("""
         CREATE TABLE IF NOT EXISTS BattleMetricSnapshots (
-            Id         INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-            EntryId    TEXT NOT NULL,
-            BattleId   TEXT NOT NULL,
-            Views      INTEGER NOT NULL DEFAULT 0,
-            Likes      INTEGER NOT NULL DEFAULT 0,
-            Comments   INTEGER NOT NULL DEFAULT 0,
-            Saves      INTEGER NOT NULL DEFAULT 0,
-            Shares     INTEGER NOT NULL DEFAULT 0,
-            Followers  INTEGER NOT NULL DEFAULT 0,
-            Score      REAL NOT NULL DEFAULT 0,
-            Source     INTEGER NOT NULL DEFAULT 1,
-            RecordedAt TEXT NOT NULL DEFAULT (datetime('now'))
+            Id               INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            EntryId          TEXT NOT NULL,
+            BattleId         TEXT NOT NULL,
+            Views            INTEGER NOT NULL DEFAULT 0,
+            Likes            INTEGER NOT NULL DEFAULT 0,
+            Comments         INTEGER NOT NULL DEFAULT 0,
+            Saves            INTEGER NOT NULL DEFAULT 0,
+            Shares           INTEGER NOT NULL DEFAULT 0,
+            Followers        INTEGER NOT NULL DEFAULT 0,
+            Score            REAL NOT NULL DEFAULT 0,
+            Source           INTEGER NOT NULL DEFAULT 1,
+            SnapshotPlatform INTEGER NOT NULL DEFAULT 0,
+            RecordedAt       TEXT NOT NULL DEFAULT (datetime('now'))
         )
         """);
 
