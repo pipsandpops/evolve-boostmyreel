@@ -314,6 +314,52 @@ export interface BattleSummary {
   endsAt: string;
 }
 
+// ── Prize Pool ─────────────────────────────────────────────────────────────────
+
+export type PrizePoolTier = 'Starter' | 'Pro' | 'Premium' | 'Custom';
+export type PrizePoolStatus = 'Pending' | 'Held' | 'Distributing' | 'Distributed' | 'Refunded';
+
+export interface PrizePoolSplit {
+  winner: number;
+  runnerUp: number;
+  voters: number;
+  platform: number;
+}
+
+export interface PrizeDistributionRow {
+  recipientType: string;
+  userId: string | null;
+  amount: number;
+  status: string;
+}
+
+export interface PrizePoolSummary {
+  hasPrizePool: boolean;
+  prizePoolId?: string;
+  totalAmount?: number;
+  currency?: string;
+  status?: PrizePoolStatus;
+  tier?: PrizePoolTier;
+  nonCashPrizes?: string | null;
+  split?: PrizePoolSplit;
+  distributions?: PrizeDistributionRow[];
+}
+
+export interface CreatePrizePoolResponse {
+  prizePoolId: string;
+  tier: string;
+  amount: number;
+  currency: string;
+  status: string;
+  nonCashPrizes: string | null;
+  split: {
+    winner: string;
+    runnerUp: string;
+    voters: string;
+    platform: string;
+  };
+}
+
 export interface AgentMessage {
   role: 'user' | 'assistant';
   content: string;

@@ -383,6 +383,39 @@ export const api = {
     return request<BattleSummary[]>(`/battle/leaderboard?limit=${limit}`);
   },
 
+  // ── Prize Pool ───────────────────────────────────────────────────────────────
+
+  createPrizePool(
+    challengeId: string,
+    brandUserId: string,
+    tier: string,
+    amount: number,
+    currency: string,
+    nonCashPrizes?: string,
+  ): Promise<import('../types').CreatePrizePoolResponse> {
+    return request('/prize-pool', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ challengeId, brandUserId, tier, amount, currency, nonCashPrizes }),
+    });
+  },
+
+  createPrizePoolPaymentOrder(prizePoolId: string): Promise<{ orderId: string; amount: number; prizePoolId: string }> {
+    return request(`/prize-pool/${prizePoolId}/pay`, { method: 'POST' });
+  },
+
+  confirmPrizePoolPayment(prizePoolId: string, paymentId: string, signature: string): Promise<{ prizePoolId: string; status: string; paidAt: string; message: string }> {
+    return request(`/prize-pool/${prizePoolId}/confirm`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ paymentId, signature }),
+    });
+  },
+
+  getPrizePoolSummary(battleOrChallengeId: string): Promise<import('../types').PrizePoolSummary> {
+    return request<import('../types').PrizePoolSummary>(`/prize-pool/battle/${battleOrChallengeId}`);
+  },
+
   // ── Referral ─────────────────────────────────────────────────────────────────
 
   getReferralLink(userId: string): Promise<{

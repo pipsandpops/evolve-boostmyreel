@@ -85,6 +85,7 @@ builder.Services.AddHostedService<ReelGenerationWorker>();
 // ── Reel Streak Battle ────────────────────────────────────────────────────────
 builder.Services.AddScoped<IBattleService, BattleService>();
 builder.Services.AddHostedService<BattleExpiryWorker>();
+builder.Services.AddHttpClient<IPrizePoolService, PrizePoolService>();
 
 // ── ImageGrowthEngine ─────────────────────────────────────────────────────────
 builder.Services.AddSingleton<ImageJobStore>();
@@ -250,6 +251,42 @@ using (var scope = app.Services.CreateScope())
             VoterToken TEXT NOT NULL,
             VoterIp    TEXT,
             CreatedAt  TEXT NOT NULL DEFAULT (datetime('now'))
+        )
+        """);
+
+    // ── Prize Pool tables ─────────────────────────────────────────────────
+    db.Database.ExecuteSqlRaw("""
+        CREATE TABLE IF NOT EXISTS PrizePools (
+            Id                 TEXT NOT NULL PRIMARY KEY,
+            ChallengeId        TEXT NOT NULL,
+            BattleId           TEXT,
+            BrandUserId        TEXT NOT NULL,
+            Tier               INTEGER NOT NULL DEFAULT 4,
+            Amount             REAL NOT NULL DEFAULT 0,
+            Currency           TEXT NOT NULL DEFAULT 'INR',
+            NonCashPrizes      TEXT,
+            Status             INTEGER NOT NULL DEFAULT 0,
+            RazorpayOrderId    TEXT,
+            RazorpayPaymentId  TEXT,
+            PaidAt             TEXT,
+            DistributedAt      TEXT,
+            CreatedAt          TEXT NOT NULL DEFAULT (datetime('now'))
+        )
+        """);
+
+    db.Database.ExecuteSqlRaw("""
+        CREATE TABLE IF NOT EXISTS PrizeDistributions (
+            Id               INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            PrizePoolId      TEXT NOT NULL,
+            BattleId         TEXT NOT NULL,
+            RecipientType    INTEGER NOT NULL DEFAULT 0,
+            RecipientUserId  TEXT,
+            Amount           REAL NOT NULL DEFAULT 0,
+            Status           INTEGER NOT NULL DEFAULT 0,
+            UpiHandle        TEXT,
+            RazorpayPayoutId TEXT,
+            CreatedAt        TEXT NOT NULL DEFAULT (datetime('now')),
+            SentAt           TEXT
         )
         """);
 }

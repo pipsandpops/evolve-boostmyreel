@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../services/api';
-import type { BattleScoreResult, BattleSummary, ChallengeStatus } from '../types';
+import type { BattleScoreResult, BattleSummary, ChallengeStatus, PrizePoolSummary } from '../types';
 import { BattleChallengePage } from './BattleChallengePage';
 
 interface Props {
@@ -49,6 +49,7 @@ function BattleArena({
   const [scores, setScores]           = useState<BattleScoreResult['battle'] | null>(null);
   const [loading, setLoading]         = useState(true);
   const [error, setError]             = useState<string | null>(null);
+  const [prizePool, setPrizePool]     = useState<PrizePoolSummary | null>(null);
   const [reelUrl, setReelUrl]         = useState('');
   const [handle, setHandle]           = useState('');
   const [entryId, setEntryId]         = useState<string | null>(null);
@@ -82,6 +83,10 @@ function BattleArena({
     pollRef.current = setInterval(load, 30_000);
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [load]);
+
+  useEffect(() => {
+    api.getPrizePoolSummary(battleId).then(p => { if (p.hasPrizePool) setPrizePool(p); }).catch(() => {});
+  }, [battleId]);
 
   async function submitEntry() {
     if (!reelUrl.trim()) return;
@@ -156,8 +161,61 @@ function BattleArena({
         </div>
       </div>
 
-      {/* Prize banner */}
-      {prize && (
+      {/* Sponsored prize pool banner */}
+      {prizePool?.hasPrizePool && prizePool.totalAmount ? (
+        <div className="bg-yellow-900/30 border border-yellow-500/30 rounded-2xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-2xl">🏆</span>
+            <div>
+              <p className="text-yellow-300 font-bold text-sm">
+                Sponsored Prize Pool — {prizePool.currency} {prizePool.totalAmount.toLocaleString()}
+              </p>
+              <p className="text-xs text-slate-400">
+                {prizePool.status === 'Held' ? '💰 Funds held in escrow' :
+                 prizePool.status === 'Distributed' ? '✅ Prizes distributed' :
+                 prizePool.status === 'Distributing' ? '⏳ Processing payouts…' :
+                 '⏳ Awaiting payment'}
+              </p>
+            </div>
+          </div>
+          {prizePool.split && (
+            <div className="grid grid-cols-4 gap-1 text-center text-xs">
+              <div className="bg-slate-700/50 rounded-lg p-2">
+                <p className="text-yellow-300 font-bold">{prizePool.currency} {prizePool.split.winner.toLocaleString()}</p>
+                <p className="text-slate-400">🥇 Winner</p>
+              </div>
+              <div className="bg-slate-700/50 rounded-lg p-2">
+                <p className="text-yellow-300 font-bold">{prizePool.currency} {prizePool.split.runnerUp.toLocaleString()}</p>
+                <p className="text-slate-400">🥈 Runner-up</p>
+              </div>
+              <div className="bg-slate-700/50 rounded-lg p-2">
+                <p className="text-yellow-300 font-bold">{prizePool.currency} {prizePool.split.voters.toLocaleString()}</p>
+                <p className="text-slate-400">🗳️ Voters</p>
+              </div>
+              <div className="bg-slate-700/50 rounded-lg p-2">
+                <p className="text-slate-400 font-bold">{prizePool.currency} {prizePool.split.platform.toLocaleString()}</p>
+                <p className="text-slate-400">⚙️ Platform</p>
+              </div>
+            </div>
+          )}
+          {prizePool.nonCashPrizes && (
+            <div className="mt-2 text-xs text-slate-400">
+              <span className="font-semibold text-slate-300">+ Non-cash: </span>{prizePool.nonCashPrizes}
+            </div>
+          )}
+          {prizePool.status === 'Distributed' && prizePool.distributions && prizePool.distributions.length > 0 && (
+            <div className="mt-3 space-y-1">
+              <p className="text-xs text-green-400 font-semibold mb-1">✅ Payouts</p>
+              {prizePool.distributions.map((d, i) => (
+                <div key={i} className="flex justify-between text-xs text-slate-300">
+                  <span>{d.recipientType}{d.userId ? ` · ${d.userId.slice(0, 8)}` : ''}</span>
+                  <span className="text-yellow-300">{prizePool.currency} {d.amount.toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : prize ? (
         <div className="bg-yellow-900/30 border border-yellow-500/30 rounded-2xl p-3 flex items-center gap-3">
           <span className="text-2xl">🏆</span>
           <div>
@@ -165,7 +223,7 @@ function BattleArena({
             <p className="text-yellow-200 text-sm">{prize}</p>
           </div>
         </div>
-      )}
+      ) : null}
 
       {/* Score cards */}
       <div className="grid grid-cols-2 gap-4">

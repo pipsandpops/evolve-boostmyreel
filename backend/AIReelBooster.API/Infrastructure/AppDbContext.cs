@@ -21,6 +21,10 @@ public class AppDbContext : DbContext
     public DbSet<BattleMetricSnapshot>  BattleMetricSnapshots => Set<BattleMetricSnapshot>();
     public DbSet<BattleVote>            BattleVotes           => Set<BattleVote>();
 
+    // ── Prize Pool ────────────────────────────────────────────────────────────
+    public DbSet<PrizePool>             PrizePools            => Set<PrizePool>();
+    public DbSet<PrizeDistribution>     PrizeDistributions    => Set<PrizeDistribution>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<UserPlan>().HasKey(u => u.UserId);
@@ -36,5 +40,9 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<BattleEntry>().HasKey(e => e.Id);
         modelBuilder.Entity<BattleMetricSnapshot>().HasKey(s => s.Id);
         modelBuilder.Entity<BattleVote>().HasKey(v => v.Id);
+
+        // Prize pool keys
+        modelBuilder.Entity<PrizePool>().HasKey(p => p.Id);
+        modelBuilder.Entity<PrizeDistribution>().HasKey(d => d.Id);
     }
 }
