@@ -2,9 +2,13 @@ import type {
   AgentChatResponse,
   AgentMessage,
   AnalysisResult,
+  AwardReferralResponse,
+  BoosterRow,
   BattleScoreResult,
   BattleSummary,
   ChallengeStatus,
+  ConfirmBoostResponse,
+  CreateBoostOrderResponse,
   CreateChallengeResponse,
   BurnSubtitlesResponse,
   ImageAnalysisResult,
@@ -434,6 +438,50 @@ export const api = {
 
   getPrizePoolSummary(battleOrChallengeId: string): Promise<import('../types').PrizePoolSummary> {
     return request<import('../types').PrizePoolSummary>(`/prize-pool/battle/${battleOrChallengeId}`);
+  },
+
+  // ── Audience Boost ───────────────────────────────────────────────────────────
+
+  createVoteBoostOrder(
+    battleId: string,
+    entryId: string,
+    voterToken: string,
+    tier: string,
+  ): Promise<CreateBoostOrderResponse> {
+    return request<CreateBoostOrderResponse>(`/battle/${battleId}/boost/order`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entryId, voterToken, tier }),
+    });
+  },
+
+  confirmVoteBoost(
+    battleId: string,
+    orderId: string,
+    paymentId: string,
+    signature: string,
+  ): Promise<ConfirmBoostResponse> {
+    return request<ConfirmBoostResponse>(`/battle/${battleId}/boost/confirm`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orderId, paymentId, signature }),
+    });
+  },
+
+  awardReferralBonus(
+    battleId: string,
+    entryId: string,
+    voterToken: string,
+  ): Promise<AwardReferralResponse> {
+    return request<AwardReferralResponse>(`/battle/${battleId}/referral`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entryId, voterToken }),
+    });
+  },
+
+  getBattleBoosters(battleId: string, limit = 10): Promise<BoosterRow[]> {
+    return request<BoosterRow[]>(`/battle/${battleId}/boosters?limit=${limit}`);
   },
 
   // ── Referral ─────────────────────────────────────────────────────────────────

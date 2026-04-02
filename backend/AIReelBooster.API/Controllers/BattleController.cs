@@ -11,12 +11,18 @@ namespace AIReelBooster.API.Controllers;
 public class BattleController : ControllerBase
 {
     private readonly IBattleService _battles;
+    private readonly IVoteBoostService _boosts;
     private readonly ILogger<BattleController> _logger;
     private readonly string _frontendBase;
 
-    public BattleController(IBattleService battles, ILogger<BattleController> logger, IOptions<AppSettings> settings)
+    public BattleController(
+        IBattleService battles,
+        IVoteBoostService boosts,
+        ILogger<BattleController> logger,
+        IOptions<AppSettings> settings)
     {
         _battles      = battles;
+        _boosts       = boosts;
         _logger       = logger;
         _frontendBase = settings.Value.Instagram.FrontendBaseUrl.TrimEnd('/');
     }
@@ -247,6 +253,89 @@ public class BattleController : ControllerBase
         var boards = await _battles.GetLeaderboardAsync(Math.Min(limit, 50), ct);
         return Ok(boards);
     }
+
+    // ── POST /api/battle/{battleId}/boost/order ───────────────────────────────
+    // Creates a Razorpay order for a paid vote boost tier.
+
+    [HttpPost("{battleId}/boost/order")]
+    public async Task<IActionResult> CreateBoostOrder(
+        string battleId, [FromBody] CreateBoostOrderRequest req, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(req.EntryId) || string.IsNullOrWhiteSpace(req.VoterToken))
+            return BadRequest(new { error = "entryId and voterToken are required." });
+
+        try
+        {
+            var result = await _boosts.CreateBoostOrderAsync(battleId, req.EntryId, req.VoterToken, req.Tier ?? "Starter", ct);
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex) { return BadRequest(new { error = ex.Message }); }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "CreateBoostOrder failed");
+            return StatusCode(500, new { error = ex.Message });
+        }
+    }
+
+    // ── POST /api/battle/{battleId}/boost/confirm ─────────────────────────────
+    // Called after Razorpay checkout to verify signature and activate votes.
+
+    [HttpPost("{battleId}/boost/confirm")]
+    public async Task<IActionResult> ConfirmBoost(
+        string battleId, [FromBody] ConfirmBoostRequest req, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(req.OrderId) || string.IsNullOrWhiteSpace(req.PaymentId))
+            return BadRequest(new { error = "orderId and paymentId are required." });
+
+        try
+        {
+            var result = await _boosts.ConfirmBoostAsync(battleId, req.OrderId, req.PaymentId, req.Signature ?? "", ct);
+            if (!result.Success) return BadRequest(new { error = result.Message });
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "ConfirmBoost failed");
+            return StatusCode(500, new { error = ex.Message });
+        }
+    }
+
+    // ── POST /api/battle/{battleId}/referral ──────────────────────────────────
+    // Awards 5 bonus votes for sharing; returns shareable card text.
+
+    [HttpPost("{battleId}/referral")]
+    public async Task<IActionResult> AwardReferral(
+        string battleId, [FromBody] ReferralRequest req, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(req.EntryId) || string.IsNullOrWhiteSpace(req.VoterToken))
+            return BadRequest(new { error = "entryId and voterToken are required." });
+
+        try
+        {
+            var result = await _boosts.AwardReferralBonusAsync(battleId, req.EntryId, req.VoterToken, ct);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "AwardReferral failed");
+            return StatusCode(500, new { error = ex.Message });
+        }
+    }
+
+    // ── GET /api/battle/{battleId}/boosters ───────────────────────────────────
+    // Public: live Top-10 booster leaderboard (no login required).
+
+    [HttpGet("{battleId}/boosters")]
+    public async Task<IActionResult> GetBoosters(
+        string battleId, [FromQuery] int limit = 10, CancellationToken ct = default)
+    {
+        try
+        {
+            var rows = await _battles.GetBoosterLeaderboardAsync(battleId, Math.Min(limit, 10), ct);
+            return Ok(rows);
+        }
+        catch (Exception ex) { return StatusCode(500, new { error = ex.Message }); }
+    }
 }
 
 // ── Request models ────────────────────────────────────────────────────────────
@@ -285,3 +374,6 @@ public record ManualMetricRequest(
 );
 
 public record VoteRequest(string EntryId, string VoterToken);
+public record CreateBoostOrderRequest(string EntryId, string VoterToken, string? Tier);
+public record ConfirmBoostRequest(string OrderId, string PaymentId, string? Signature);
+public record ReferralRequest(string EntryId, string VoterToken);

@@ -127,3 +127,41 @@ public class BattleVote
     public string? VoterIp   { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
+
+// ── Paid vote boost (Razorpay) ────────────────────────────────────────────────
+
+public class VoteBoost
+{
+    public int     Id                 { get; set; }
+    public string  BattleId           { get; set; } = string.Empty;
+    public string  EntryId            { get; set; } = string.Empty;   // who this boost supports
+    public string  VoterToken         { get; set; } = string.Empty;   // buyer's device fingerprint
+    public string? VoterIp            { get; set; }
+    public int     VoteCount          { get; set; }                    // 10 / 50 / 100
+    public decimal AmountPaid         { get; set; }
+    public string  BoostTier          { get; set; } = string.Empty;   // "Starter" | "Power" | "Mega" | "Referral"
+    public string? RazorpayOrderId    { get; set; }
+    public string? RazorpayPaymentId  { get; set; }
+    public bool    Verified           { get; set; } = false;
+    public DateTime CreatedAt         { get; set; } = DateTime.UtcNow;
+}
+
+// ── Boost tier definitions ────────────────────────────────────────────────────
+
+public static class VoteBoostTiers
+{
+    public record TierDef(string Key, int Votes, decimal AmountINR, string Label, string Emoji);
+
+    public static readonly TierDef Starter   = new("Starter",  10,  29m,  "Starter Boost",  "🔥");
+    public static readonly TierDef Power     = new("Power",    50,  99m,  "Power Boost",    "💥");
+    public static readonly TierDef Mega      = new("Mega",    100, 179m,  "Mega Boost",     "⚡");
+    public const int ReferralBonusVotes = 5;
+
+    public static TierDef? Get(string key) => key.ToLowerInvariant() switch
+    {
+        "starter" => Starter,
+        "power"   => Power,
+        "mega"    => Mega,
+        _         => null,
+    };
+}

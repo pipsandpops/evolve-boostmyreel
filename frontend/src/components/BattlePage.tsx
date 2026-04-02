@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../services/api';
-import type { BattleScoreResult, BattleSummary, ChallengeStatus, PrizePoolSummary } from '../types';
+import type { BoosterRow, BattleScoreResult, BattleSummary, ChallengeStatus, PrizePoolSummary } from '../types';
+import { VOTE_BOOST_TIERS } from '../types';
 import { BattleChallengePage } from './BattleChallengePage';
 
 interface Props {
@@ -108,6 +109,14 @@ function BattleArena({
   const [ytMetrics, setYtMetrics]     = useState({ views: 0, likes: 0, comments: 0, saves: 0, shares: 0, followers: 0 });
   const [metricPlatform, setMetricPlatform] = useState<'Instagram' | 'YouTube'>('Instagram');
 
+  // Boost state
+  const [boostTarget, setBoostTarget] = useState<string | null>(null); // entryId being boosted
+  const [boosting, setBoosting]       = useState(false);
+  const [boostMsg, setBoostMsg]       = useState('');
+  const [shareCard, setShareCard]     = useState<{ text: string; url: string } | null>(null);
+  const [referralAwarded, setReferralAwarded] = useState(false);
+  const [boosters, setBoosters]       = useState<BoosterRow[]>([]);
+
   const load = useCallback(async () => {
     try {
       const data = await api.getBattleScores(battleId);
@@ -141,6 +150,7 @@ function BattleArena({
 
   useEffect(() => {
     api.getPrizePoolSummary(battleId).then(p => { if (p.hasPrizePool) setPrizePool(p); }).catch(() => {});
+    api.getBattleBoosters(battleId).then(setBoosters).catch(() => {});
   }, [battleId]);
 
   async function submitEntry() {
@@ -182,19 +192,68 @@ function BattleArena({
     }
   }
 
-  async function vote(targetEntryId: string) {
-    const token = localStorage.getItem('bmr_voter_token') ?? (() => {
+  function getVoterToken() {
+    return localStorage.getItem('bmr_voter_token') ?? (() => {
       const t = crypto.randomUUID();
       localStorage.setItem('bmr_voter_token', t);
       return t;
     })();
+  }
+
+  async function vote(targetEntryId: string) {
+    const token = getVoterToken();
     try {
       const res = await api.voteBattle(battleId, targetEntryId, token);
       setVoted(true);
       setVoteMsg(res.message);
       await load();
+      // Award referral bonus + get share card
+      const referral = await api.awardReferralBonus(battleId, targetEntryId, token);
+      setShareCard(referral.shareCard);
+      if (referral.awarded) setReferralAwarded(true);
+      api.getBattleBoosters(battleId).then(setBoosters).catch(() => {});
     } catch (err) {
       setVoteMsg(err instanceof Error ? err.message : 'Vote failed.');
+    }
+  }
+
+  async function buyBoost(targetEntryId: string, tier: string) {
+    const token = getVoterToken();
+    setBoosting(true);
+    setBoostMsg('');
+    try {
+      const order = await api.createVoteBoostOrder(battleId, targetEntryId, token, tier);
+      const Razorpay = (window as unknown as { Razorpay: new (opts: unknown) => { open(): void } }).Razorpay;
+      await new Promise<void>((resolve, reject) => {
+        const rp = new Razorpay({
+          key: order.keyId,
+          amount: order.amount * 100,
+          currency: order.currency,
+          name: 'BoostMyReel',
+          description: `${order.label} — ${order.votes} votes`,
+          order_id: order.orderId,
+          handler: async (response: { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string }) => {
+            try {
+              const result = await api.confirmVoteBoost(
+                battleId, response.razorpay_order_id,
+                response.razorpay_payment_id, response.razorpay_signature);
+              setBoostMsg(result.message);
+              setBoostTarget(null);
+              await load();
+              api.getBattleBoosters(battleId).then(setBoosters).catch(() => {});
+              resolve();
+            } catch (e) { reject(e); }
+          },
+          modal: { ondismiss: () => reject(new Error('cancelled')) },
+          theme: { color: '#7c3aed' },
+        });
+        rp.open();
+      });
+    } catch (err) {
+      if (err instanceof Error && err.message !== 'cancelled')
+        setBoostMsg(err.message);
+    } finally {
+      setBoosting(false);
     }
   }
 
@@ -340,15 +399,38 @@ function BattleArena({
               )}
             </div>
 
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <span className="text-xs text-slate-400">🗳 {votes} votes</span>
-              {status === 'Active' && !voted && eid && (
-                <button onClick={() => vote(eid)}
-                  className="text-xs bg-purple-600 hover:bg-purple-500 text-white px-3 py-1 rounded-lg transition-colors">
-                  Vote
-                </button>
+              {status === 'Active' && eid && (
+                <div className="flex gap-1.5">
+                  {!voted && (
+                    <button onClick={() => vote(eid)}
+                      className="text-xs bg-purple-600 hover:bg-purple-500 text-white px-3 py-1 rounded-lg transition-colors">
+                      Vote
+                    </button>
+                  )}
+                  <button onClick={() => setBoostTarget(boostTarget === eid ? null : eid)}
+                    className="text-xs bg-yellow-600 hover:bg-yellow-500 text-white px-3 py-1 rounded-lg transition-colors">
+                    ⚡ Boost
+                  </button>
+                </div>
               )}
             </div>
+
+            {/* Boost tier panel */}
+            {boostTarget === eid && (
+              <div className="mt-3 bg-slate-900/60 border border-yellow-500/30 rounded-xl p-3 space-y-2">
+                <p className="text-xs text-yellow-300 font-semibold mb-1">Choose a Boost Pack</p>
+                {VOTE_BOOST_TIERS.map(t => (
+                  <button key={t.tier} onClick={() => buyBoost(eid, t.tier)} disabled={boosting}
+                    className="w-full flex items-center justify-between bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-white px-3 py-2 rounded-lg text-xs transition-colors">
+                    <span>{t.emoji} {t.label}</span>
+                    <span className="text-slate-300">{t.votes} votes — ₹{t.amountINR}</span>
+                  </button>
+                ))}
+                {boostMsg && <p className="text-xs text-center text-yellow-300 pt-1">{boostMsg}</p>}
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -374,8 +456,59 @@ function BattleArena({
         </div>
       )}
 
-      {voteMsg && (
-        <p className="text-center text-sm text-purple-300">{voteMsg}</p>
+      {voteMsg && <p className="text-center text-sm text-purple-300">{voteMsg}</p>}
+
+      {/* Share card — shown after free vote */}
+      {shareCard && (
+        <div className="bg-purple-900/40 border border-purple-500/30 rounded-2xl p-4 text-center">
+          <p className="text-purple-300 font-semibold text-sm mb-1">
+            {referralAwarded ? '🎉 +5 bonus votes awarded for sharing!' : '📣 Share to earn 5 FREE bonus votes!'}
+          </p>
+          <p className="text-slate-400 text-xs italic mb-3">"{shareCard.text}"</p>
+          <div className="flex gap-2 justify-center">
+            <button onClick={() => { navigator.clipboard.writeText(shareCard.url); }}
+              className="text-xs bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg transition-colors">
+              Copy Link
+            </button>
+            <a href={`https://wa.me/?text=${encodeURIComponent(shareCard.text)}`}
+              target="_blank" rel="noreferrer"
+              className="text-xs bg-green-700 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg transition-colors">
+              WhatsApp
+            </a>
+          </div>
+        </div>
+      )}
+
+      {/* Top Boosters leaderboard */}
+      {boosters.length > 0 && (
+        <div className="bg-slate-800/60 border border-slate-700 rounded-2xl p-4">
+          <h3 className="text-white font-semibold text-sm mb-3">⚡ Top Boosters</h3>
+          <div className="space-y-2">
+            {boosters.map(b => (
+              <div key={b.rank} className="flex items-center gap-3 text-xs">
+                <span className="text-slate-500 w-5">#{b.rank}</span>
+                <span className="text-slate-300 flex-1">{b.voterToken.slice(0, 8)}…</span>
+                <span className="text-yellow-300 font-semibold">{b.totalVotes} votes</span>
+                {b.totalSpent > 0 && <span className="text-slate-500">₹{b.totalSpent}</span>}
+              </div>
+            ))}
+          </div>
+          {prizePool?.hasPrizePool && prizePool.totalAmount && (
+            <p className="text-xs text-slate-500 mt-3 border-t border-slate-700 pt-2">
+              Top {boosters.length} boosters share ₹{Math.round(prizePool.totalAmount * 0.30).toLocaleString()} prize pool
+            </p>
+          )}
+          {/* My rank hint */}
+          {(() => {
+            const myToken = localStorage.getItem('bmr_voter_token');
+            const myRow = boosters.find(b => b.voterToken === myToken);
+            return myRow ? (
+              <p className="text-xs text-yellow-400 mt-2 font-semibold">
+                You are currently #{myRow.rank} — Keep boosting to stay in Top 10! 💰
+              </p>
+            ) : null;
+          })()}
+        </div>
       )}
 
       {/* Winner banner */}

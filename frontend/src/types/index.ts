@@ -371,6 +371,52 @@ export interface CreatePrizePoolResponse {
   };
 }
 
+// ── Audience Boost ─────────────────────────────────────────────────────────────
+
+export type VoteBoostTier = 'Starter' | 'Power' | 'Mega';
+
+export interface VoteBoostTierInfo {
+  tier: VoteBoostTier;
+  votes: number;
+  amountINR: number;
+  label: string;
+  emoji: string;
+}
+
+export const VOTE_BOOST_TIERS: VoteBoostTierInfo[] = [
+  { tier: 'Starter', votes: 10,  amountINR: 29,  label: 'Starter Boost', emoji: '🔥' },
+  { tier: 'Power',   votes: 50,  amountINR: 99,  label: 'Power Boost',   emoji: '💥' },
+  { tier: 'Mega',    votes: 100, amountINR: 179, label: 'Mega Boost',    emoji: '⚡' },
+];
+
+export interface CreateBoostOrderResponse {
+  orderId: string;
+  amount: number;
+  currency: string;
+  label: string;
+  keyId: string;
+  votes: number;
+}
+
+export interface ConfirmBoostResponse {
+  success: boolean;
+  message: string;
+  votesAdded: number;
+}
+
+export interface AwardReferralResponse {
+  awarded: boolean;
+  bonusVotes: number;
+  shareCard: { text: string; url: string };
+}
+
+export interface BoosterRow {
+  rank: number;
+  voterToken: string;
+  totalVotes: number;
+  totalSpent: number;
+}
+
 export interface AgentMessage {
   role: 'user' | 'assistant';
   content: string;
