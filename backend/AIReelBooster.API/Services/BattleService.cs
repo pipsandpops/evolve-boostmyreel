@@ -9,6 +9,15 @@ public class BattleService : IBattleService
 {
     private readonly AppDbContext _db;
     private readonly ILogger<BattleService> _logger;
+    private readonly ContentValidationService _validator;
+
+    // Submission deadline multiplier: battle_hours / divisor = deadline hours
+    private static readonly Dictionary<int, int> SubmissionDeadlineHours = new()
+    {
+        { 24,  2 },
+        { 48,  4 },
+        { 168, 12 },
+    };
 
     // ── Scoring weights ───────────────────────────────────────────────────────
     private const double W_Views     = 0.30;
@@ -22,9 +31,10 @@ public class BattleService : IBattleService
     // Anti-cheat: deltas above this multiplier of baseline are capped
     private const double AnticheatCapMultiplier = 3.0;
 
-    public BattleService(AppDbContext db, ILogger<BattleService> logger)
+    public BattleService(AppDbContext db, ContentValidationService validator, ILogger<BattleService> logger)
     {
-        _db     = db;
+        _db        = db;
+        _validator = validator;
         _logger = logger;
     }
 
@@ -81,19 +91,21 @@ public class BattleService : IBattleService
             throw new InvalidOperationException("Challenge has expired.");
         }
 
+        var deadlineHrs = SubmissionDeadlineHours.GetValueOrDefault(challenge.DurationHours, 2);
         var battle = new Battle
         {
-            ChallengeId       = challengeId,
-            ChallengerUserId  = challenge.ChallengerId,
-            OpponentUserId    = opponentUserId,
-            StartedAt         = DateTime.UtcNow,
-            EndsAt            = DateTime.UtcNow.AddHours(challenge.DurationHours),
-            BattleTitle       = challenge.BattleTitle,
-            Platform          = challenge.Platform,
-            ThemeHashtag      = challenge.ThemeHashtag,
-            PrizePoolAmount   = challenge.PrizePoolAmount,
-            PrizeCurrency     = challenge.PrizeCurrency,
-            ContentGuidelines = challenge.ContentGuidelines,
+            ChallengeId          = challengeId,
+            ChallengerUserId     = challenge.ChallengerId,
+            OpponentUserId       = opponentUserId,
+            StartedAt            = DateTime.UtcNow,
+            EndsAt               = DateTime.UtcNow.AddHours(challenge.DurationHours),
+            SubmissionDeadlineAt = DateTime.UtcNow.AddHours(deadlineHrs),
+            BattleTitle          = challenge.BattleTitle,
+            Platform             = challenge.Platform,
+            ThemeHashtag         = challenge.ThemeHashtag,
+            PrizePoolAmount      = challenge.PrizePoolAmount,
+            PrizeCurrency        = challenge.PrizeCurrency,
+            ContentGuidelines    = challenge.ContentGuidelines,
         };
 
         challenge.Status   = ChallengeStatus.Accepted;
@@ -124,7 +136,7 @@ public class BattleService : IBattleService
         => await _db.Battles.FindAsync([battleId], ct);
 
     public async Task<BattleEntry> SubmitEntryAsync(
-        string battleId, string userId, string instagramHandle, string reelUrl,
+        string battleId, string userId, SubmitEntryInput input,
         CancellationToken ct = default)
     {
         var battle = await _db.Battles.FindAsync([battleId], ct)
@@ -136,22 +148,60 @@ public class BattleService : IBattleService
         if (userId != battle.ChallengerUserId && userId != battle.OpponentUserId)
             throw new InvalidOperationException("User is not a participant in this battle.");
 
-        // Remove existing entry if re-submitting
+        // ── Submission deadline check ─────────────────────────────────────────
+        // For existing battles created before this feature, SubmissionDeadlineAt may be default
+        var hasDeadline = battle.SubmissionDeadlineAt > battle.StartedAt;
+        if (hasDeadline && DateTime.UtcNow > battle.SubmissionDeadlineAt)
+        {
+            var deadlineHrs = SubmissionDeadlineHours.GetValueOrDefault((int)(battle.EndsAt - battle.StartedAt).TotalHours, 2);
+            throw new InvalidOperationException(
+                $"Submission deadline has passed ({deadlineHrs}h window). This entry is an automatic forfeit.");
+        }
+
+        // ── Platform URL validation ───────────────────────────────────────────
+        if (input.Platform == BattlePlatform.Instagram && string.IsNullOrWhiteSpace(input.InstagramUrl))
+            throw new InvalidOperationException("Instagram URL is required.");
+        if (input.Platform == BattlePlatform.YouTube && string.IsNullOrWhiteSpace(input.YouTubeUrl))
+            throw new InvalidOperationException("YouTube URL is required.");
+        if (input.Platform == BattlePlatform.Both)
+        {
+            if (string.IsNullOrWhiteSpace(input.InstagramUrl))
+                throw new InvalidOperationException("Instagram URL is required for Both-platform submission.");
+            if (string.IsNullOrWhiteSpace(input.YouTubeUrl))
+                throw new InvalidOperationException("YouTube URL is required for Both-platform submission.");
+        }
+
+        // Remove existing entry if re-submitting (before deadline)
         var existing = await _db.BattleEntries
             .FirstOrDefaultAsync(e => e.BattleId == battleId && e.UserId == userId, ct);
         if (existing != null) _db.BattleEntries.Remove(existing);
 
         var entry = new BattleEntry
         {
-            BattleId        = battleId,
-            UserId          = userId,
-            InstagramHandle = instagramHandle.TrimStart('@').ToLowerInvariant(),
-            ReelUrl         = reelUrl,
-            SubmittedAt     = DateTime.UtcNow,
+            BattleId          = battleId,
+            UserId            = userId,
+            SubmittedPlatform = input.Platform,
+            InstagramHandle   = input.InstagramHandle.TrimStart('@').ToLowerInvariant(),
+            ReelUrl           = input.InstagramUrl.Trim(),
+            YouTubeUrl        = input.YouTubeUrl?.Trim(),
+            YouTubeHandle     = input.YouTubeHandle?.TrimStart('@').ToLowerInvariant(),
+            SubmittedAt       = DateTime.UtcNow,
+            ValidationStatus  = ContentValidationStatus.Pending,
         };
 
         _db.BattleEntries.Add(entry);
         await _db.SaveChangesAsync(ct);
+
+        _logger.LogInformation("Entry {EntryId} submitted for battle {BattleId} — platform {Platform}",
+            entry.Id, battleId, input.Platform);
+
+        // Fire-and-forget AI content validation
+        _ = Task.Run(async () =>
+        {
+            try { await _validator.ValidateAsync(entry.Id); }
+            catch (Exception ex) { _logger.LogError(ex, "Validation fire-and-forget failed for {EntryId}", entry.Id); }
+        });
+
         return entry;
     }
 
@@ -186,13 +236,15 @@ public class BattleService : IBattleService
         var timeLeft = Math.Max(0, (int)(battle.EndsAt - DateTime.UtcNow).TotalSeconds);
 
         return new BattleScoreResult(
-            BattleId:      battleId,
-            Status:        battle.Status.ToString(),
-            EndsAt:        battle.EndsAt,
-            TimeLeftSeconds: timeLeft,
-            Challenger:    challengerScore ?? EmptyScore(battle.ChallengerUserId),
-            Opponent:      opponentScore   ?? EmptyScore(battle.OpponentUserId),
-            AudienceVotes: new AudienceVoteTally(
+            BattleId:             battleId,
+            Status:               battle.Status.ToString(),
+            EndsAt:               battle.EndsAt,
+            SubmissionDeadlineAt: battle.SubmissionDeadlineAt,
+            TimeLeftSeconds:      timeLeft,
+            Platform:             battle.Platform.ToString(),
+            Challenger:           challengerScore ?? EmptyScore(battle.ChallengerUserId),
+            Opponent:             opponentScore   ?? EmptyScore(battle.OpponentUserId),
+            AudienceVotes:        new AudienceVoteTally(
                 challengerEntry?.Id ?? "", challengerVotes,
                 opponentEntry?.Id   ?? "", opponentVotes)
         );
@@ -201,40 +253,79 @@ public class BattleService : IBattleService
     private async Task<CreatorScore> BuildCreatorScoreAsync(
         BattleEntry entry, int voteCount, CancellationToken ct)
     {
-        var latest = await _db.BattleMetricSnapshots
-            .Where(s => s.EntryId == entry.Id)
+        var handle = string.IsNullOrEmpty(entry.InstagramHandle) ? entry.YouTubeHandle ?? "" : entry.InstagramHandle;
+
+        // ── Instagram metrics ─────────────────────────────────────────────────
+        var latestIg = await _db.BattleMetricSnapshots
+            .Where(s => s.EntryId == entry.Id && s.SnapshotPlatform == BattlePlatform.Instagram)
             .OrderByDescending(s => s.RecordedAt)
             .FirstOrDefaultAsync(ct);
 
-        if (latest is null)
-            return EmptyScore(entry.UserId, entry.InstagramHandle);
+        // ── YouTube metrics (only for Both-platform entries) ──────────────────
+        var latestYt = entry.SubmittedPlatform == BattlePlatform.Both
+            ? await _db.BattleMetricSnapshots
+                .Where(s => s.EntryId == entry.Id && s.SnapshotPlatform == BattlePlatform.YouTube)
+                .OrderByDescending(s => s.RecordedAt)
+                .FirstOrDefaultAsync(ct)
+            : null;
 
-        var dViews    = ApplyAnticheat(latest.Views    - entry.BaselineViews,    entry.BaselineViews);
-        var dLikes    = ApplyAnticheat(latest.Likes    - entry.BaselineLikes,    entry.BaselineLikes);
-        var dComments = ApplyAnticheat(latest.Comments - entry.BaselineComments, entry.BaselineComments);
-        var dSaves    = ApplyAnticheat(latest.Saves    - entry.BaselineSaves,    entry.BaselineSaves);
-        var dShares   = ApplyAnticheat(latest.Shares   - entry.BaselineShares,   entry.BaselineShares);
-        var dFollowers = ApplyAnticheat(latest.Followers - entry.BaselineFollowers, entry.BaselineFollowers);
+        // Fall back to non-platform-tagged snapshots for backward compatibility
+        if (latestIg is null && latestYt is null)
+        {
+            var latestAny = await _db.BattleMetricSnapshots
+                .Where(s => s.EntryId == entry.Id)
+                .OrderByDescending(s => s.RecordedAt)
+                .FirstOrDefaultAsync(ct);
+            if (latestAny is null) return EmptyScore(entry.UserId, handle);
+            latestIg = latestAny;
+        }
 
-        var score = (dViews    * W_Views)
-                  + (dLikes    * W_Likes)
-                  + (dComments * W_Comments)
-                  + (dSaves    * W_Saves)
-                  + (dShares   * W_Shares)
-                  + (dFollowers * FollowerMul)
-                  + (voteCount  * VoteMul);
+        // ── Instagram score ───────────────────────────────────────────────────
+        double igScore = 0; long dViews = 0, dLikes = 0, dComments = 0, dSaves = 0, dShares = 0, dFollowers = 0;
+        string metricSource = "none";
+
+        if (latestIg is not null)
+        {
+            dViews    = ApplyAnticheat(latestIg.Views    - entry.BaselineViews,    entry.BaselineViews);
+            dLikes    = ApplyAnticheat(latestIg.Likes    - entry.BaselineLikes,    entry.BaselineLikes);
+            dComments = ApplyAnticheat(latestIg.Comments - entry.BaselineComments, entry.BaselineComments);
+            dSaves    = ApplyAnticheat(latestIg.Saves    - entry.BaselineSaves,    entry.BaselineSaves);
+            dShares   = ApplyAnticheat(latestIg.Shares   - entry.BaselineShares,   entry.BaselineShares);
+            dFollowers = ApplyAnticheat(latestIg.Followers - entry.BaselineFollowers, entry.BaselineFollowers);
+            igScore    = (dViews * W_Views) + (dLikes * W_Likes) + (dComments * W_Comments)
+                       + (dSaves * W_Saves) + (dShares * W_Shares) + (dFollowers * FollowerMul);
+            metricSource = latestIg.Source.ToString();
+        }
+
+        // ── YouTube score ─────────────────────────────────────────────────────
+        double ytScore = 0;
+        if (latestYt is not null)
+        {
+            var ytViews     = ApplyAnticheat(latestYt.Views    - entry.YtBaselineViews,    entry.YtBaselineViews);
+            var ytLikes     = ApplyAnticheat(latestYt.Likes    - entry.YtBaselineLikes,    entry.YtBaselineLikes);
+            var ytComments  = ApplyAnticheat(latestYt.Comments - entry.YtBaselineComments, entry.YtBaselineComments);
+            var ytFollowers = ApplyAnticheat(latestYt.Followers - entry.YtBaselineFollowers, entry.YtBaselineFollowers);
+            ytScore = (ytViews * W_Views) + (ytLikes * W_Likes) + (ytComments * W_Comments)
+                    + (ytFollowers * FollowerMul);
+        }
+
+        var combined = igScore + ytScore + (voteCount * VoteMul);
 
         return new CreatorScore(
-            UserId:        entry.UserId,
-            Handle:        entry.InstagramHandle,
-            Score:         Math.Round(score, 2),
-            DeltaViews:    dViews,
-            DeltaLikes:    dLikes,
-            DeltaComments: dComments,
-            DeltaSaves:    dSaves,
-            DeltaShares:   dShares,
-            DeltaFollowers: dFollowers,
-            MetricSource:  latest.Source.ToString()
+            UserId:           entry.UserId,
+            Handle:           handle,
+            Score:            Math.Round(combined, 2),
+            DeltaViews:       dViews,
+            DeltaLikes:       dLikes,
+            DeltaComments:    dComments,
+            DeltaSaves:       dSaves,
+            DeltaShares:      dShares,
+            DeltaFollowers:   dFollowers,
+            MetricSource:     metricSource,
+            InstagramScore:   latestIg is not null ? Math.Round(igScore, 2) : null,
+            YouTubeScore:     latestYt is not null ? Math.Round(ytScore, 2) : null,
+            SubmittedPlatform: entry.SubmittedPlatform.ToString(),
+            ValidationStatus:  entry.ValidationStatus.ToString()
         );
     }
 
@@ -246,12 +337,13 @@ public class BattleService : IBattleService
     }
 
     private static CreatorScore EmptyScore(string userId, string handle = "") =>
-        new(userId, handle, 0, 0, 0, 0, 0, 0, 0, "none");
+        new(userId, handle, 0, 0, 0, 0, 0, 0, 0, "none", null, null, "Instagram", "Skipped");
 
     // ── Manual metrics ────────────────────────────────────────────────────────
 
     public async Task RecordManualMetricsAsync(
-        string entryId, string userId, MetricInput m, CancellationToken ct = default)
+        string entryId, string userId, MetricInput m, BattlePlatform platform,
+        CancellationToken ct = default)
     {
         var entry = await _db.BattleEntries.FindAsync([entryId], ct)
             ?? throw new InvalidOperationException("Entry not found.");
@@ -259,26 +351,28 @@ public class BattleService : IBattleService
         if (entry.UserId != userId)
             throw new UnauthorizedAccessException("Not your entry.");
 
-        // Rate limit: max 6 manual updates per battle entry (every 4h)
+        // Rate limit: max 2 manual updates per platform per 4h window
         var recentCount = await _db.BattleMetricSnapshots
             .CountAsync(s => s.EntryId == entryId && s.Source == MetricSource.Manual
+                          && s.SnapshotPlatform == platform
                           && s.RecordedAt > DateTime.UtcNow.AddHours(-4), ct);
 
         if (recentCount >= 2)
-            throw new InvalidOperationException("Rate limit: max 2 manual updates per 4 hours.");
+            throw new InvalidOperationException($"Rate limit: max 2 manual updates per 4 hours for {platform}.");
 
         var snapshot = new BattleMetricSnapshot
         {
-            EntryId    = entryId,
-            BattleId   = entry.BattleId,
-            Views      = m.Views,
-            Likes      = m.Likes,
-            Comments   = m.Comments,
-            Saves      = m.Saves,
-            Shares     = m.Shares,
-            Followers  = m.Followers,
-            Source     = MetricSource.Manual,
-            RecordedAt = DateTime.UtcNow,
+            EntryId         = entryId,
+            BattleId        = entry.BattleId,
+            Views           = m.Views,
+            Likes           = m.Likes,
+            Comments        = m.Comments,
+            Saves           = m.Saves,
+            Shares          = m.Shares,
+            Followers       = m.Followers,
+            Source          = MetricSource.Manual,
+            SnapshotPlatform = platform,
+            RecordedAt      = DateTime.UtcNow,
         };
 
         _db.BattleMetricSnapshots.Add(snapshot);

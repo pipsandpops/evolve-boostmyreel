@@ -6,6 +6,8 @@ public enum ChallengeStatus { Pending, Accepted, Declined, Expired }
 
 public enum BattlePlatform { Instagram, YouTube, Both }
 
+public enum ContentValidationStatus { Skipped, Pending, Approved, Rejected }
+
 public class BattleChallenge
 {
     public string Id               { get; set; } = Guid.NewGuid().ToString("N");
@@ -43,6 +45,7 @@ public class Battle
     public BattleStatus Status       { get; set; } = BattleStatus.Active;
     public DateTime StartedAt        { get; set; } = DateTime.UtcNow;
     public DateTime EndsAt           { get; set; } = DateTime.UtcNow.AddHours(24); // overridden by DurationHours
+    public DateTime SubmissionDeadlineAt { get; set; } = DateTime.UtcNow.AddHours(2); // 2hr / 4hr / 12hr
     public string? WinnerUserId      { get; set; }
     public DateTime CreatedAt        { get; set; } = DateTime.UtcNow;
 
@@ -62,16 +65,33 @@ public class BattleEntry
     public string Id                  { get; set; } = Guid.NewGuid().ToString("N");
     public string BattleId            { get; set; } = string.Empty;
     public string UserId              { get; set; } = string.Empty;
+
+    // Platform & URLs
+    public BattlePlatform SubmittedPlatform { get; set; } = BattlePlatform.Instagram;
     public string InstagramHandle     { get; set; } = string.Empty;
-    public string ReelUrl             { get; set; } = string.Empty;
+    public string ReelUrl             { get; set; } = string.Empty;  // Instagram URL
     public string? ReelPostId         { get; set; }
-    // Baseline metrics captured at battle start
+    public string? YouTubeUrl         { get; set; }                  // YouTube Shorts URL
+    public string? YouTubeHandle      { get; set; }                  // @youtube handle
+
+    // AI content validation
+    public ContentValidationStatus ValidationStatus { get; set; } = ContentValidationStatus.Skipped;
+    public string? ValidationNotes    { get; set; }
+
+    // Baseline metrics — Instagram
     public long BaselineViews         { get; set; }
     public long BaselineLikes         { get; set; }
     public long BaselineComments      { get; set; }
     public long BaselineSaves         { get; set; }
     public long BaselineShares        { get; set; }
     public long BaselineFollowers     { get; set; }
+
+    // Baseline metrics — YouTube (only when SubmittedPlatform == Both)
+    public long YtBaselineViews       { get; set; }
+    public long YtBaselineLikes       { get; set; }
+    public long YtBaselineComments    { get; set; }
+    public long YtBaselineFollowers   { get; set; }
+
     public DateTime SubmittedAt       { get; set; } = DateTime.UtcNow;
 }
 
@@ -92,6 +112,7 @@ public class BattleMetricSnapshot
     public long Followers   { get; set; }
     public double Score     { get; set; }           // computed weighted score
     public MetricSource Source { get; set; } = MetricSource.Manual;
+    public BattlePlatform SnapshotPlatform { get; set; } = BattlePlatform.Instagram;
     public DateTime RecordedAt { get; set; } = DateTime.UtcNow;
 }
 
