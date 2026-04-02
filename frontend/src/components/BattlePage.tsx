@@ -151,6 +151,8 @@ function BattleArena({
   useEffect(() => {
     api.getPrizePoolSummary(battleId).then(p => { if (p.hasPrizePool) setPrizePool(p); }).catch(() => {});
     api.getBattleBoosters(battleId).then(setBoosters).catch(() => {});
+    // Track page view (fire-and-forget)
+    api.trackBattlePageView(battleId, getVoterToken()).catch(() => {});
   }, [battleId]);
 
   async function submitEntry() {

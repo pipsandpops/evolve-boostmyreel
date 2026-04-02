@@ -19,9 +19,10 @@ import { RecoverAccessModal } from './components/RecoverAccessModal';
 import { AgentChat } from './components/AgentChat';
 import { AdminPage } from './components/AdminPage';
 import { BattlePage } from './components/BattlePage';
+import BrandAnalyticsDashboard from './components/BrandAnalyticsDashboard';
 import { Sparkles, RotateCcw, Zap, FileText, Hash, Captions, Menu, X, ImagePlus, Clapperboard, BookOpen, Crown, Gift } from 'lucide-react';
 
-type Page = 'home' | 'payment' | 'contact' | 'image-analysis' | 'auto-reel' | 'blog' | 'blog-why-best' | 'battle';
+type Page = 'home' | 'payment' | 'contact' | 'image-analysis' | 'auto-reel' | 'blog' | 'blog-why-best' | 'battle' | 'brand-analytics';
 
 function App() {
   // Secret admin page — only accessible via ?admin in the URL
@@ -40,7 +41,7 @@ function App() {
 
   const [page, setPage] = useState<Page>(() => {
     const p = new URLSearchParams(window.location.search).get('page');
-    const validPages: Page[] = ['blog', 'blog-why-best', 'contact', 'image-analysis', 'auto-reel', 'payment', 'battle'];
+    const validPages: Page[] = ['blog', 'blog-why-best', 'contact', 'image-analysis', 'auto-reel', 'payment', 'battle', 'brand-analytics'];
     if (window.location.pathname.startsWith('/battle/')) return 'battle';
     return validPages.includes(p as Page) ? (p as Page) : 'home';
   });
@@ -138,6 +139,20 @@ function App() {
         isPaidUser={isPaidUser}
         onBack={() => { setPage('home'); window.scrollTo(0, 0); }}
         onUpgrade={() => { setPage('payment'); setSelectedPlan(null); setTimeout(() => scrollTo('pricing'), 100); }}
+      />
+    );
+  }
+
+  // ── Brand Analytics page ──────────────────────────────────────────
+  if (page === 'brand-analytics') {
+    const params = new URLSearchParams(window.location.search);
+    const roiBattleId   = params.get('battleId')   ?? '';
+    const roiBrandUserId = params.get('brandUserId') ?? '';
+    return (
+      <BrandAnalyticsDashboard
+        battleId={roiBattleId}
+        brandUserId={roiBrandUserId}
+        onBack={() => { setPage('home'); window.scrollTo(0, 0); }}
       />
     );
   }

@@ -417,6 +417,43 @@ export interface BoosterRow {
   totalSpent: number;
 }
 
+// ── Brand Analytics ───────────────────────────────────────────────────────────
+
+export interface BenchmarkComparison {
+  industry: string;
+  avgEngagementRate: string;
+  yourEngagementRate: string;
+  multiplier: number;
+  verdict: string;
+  badge: string;
+}
+
+export interface BrandRoiAnalytics {
+  battleId: string;
+  battleTitle: string | null;
+  themeHashtag: string | null;
+  status: string;
+  startedAt: string;
+  endsAt: string;
+  totalPageViews: number;
+  uniqueVisitors: number;
+  instagramReach: number;
+  youTubeReach: number;
+  totalReach: number;
+  totalVotes: number;
+  totalBoostsPurchased: number;
+  totalBoostRevenue: number;
+  totalShares: number;
+  totalLikes: number;
+  totalComments: number;
+  hashtagUsageEstimate: number;
+  estimatedEMV: number;
+  costPerEngagement: number;
+  prizePoolSpend: number;
+  engagementRate: string;
+  benchmark: BenchmarkComparison;
+}
+
 export interface AgentMessage {
   role: 'user' | 'assistant';
   content: string;

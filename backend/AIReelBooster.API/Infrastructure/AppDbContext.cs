@@ -26,6 +26,9 @@ public class AppDbContext : DbContext
     public DbSet<PrizePool>             PrizePools            => Set<PrizePool>();
     public DbSet<PrizeDistribution>     PrizeDistributions    => Set<PrizeDistribution>();
 
+    // ── Brand Analytics ───────────────────────────────────────────────────────
+    public DbSet<BattlePageView>        BattlePageViews       => Set<BattlePageView>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<UserPlan>().HasKey(u => u.UserId);
@@ -46,5 +49,8 @@ public class AppDbContext : DbContext
         // Prize pool keys
         modelBuilder.Entity<PrizePool>().HasKey(p => p.Id);
         modelBuilder.Entity<PrizeDistribution>().HasKey(d => d.Id);
+
+        // Brand analytics keys
+        modelBuilder.Entity<BattlePageView>().HasKey(v => v.Id);
     }
 }

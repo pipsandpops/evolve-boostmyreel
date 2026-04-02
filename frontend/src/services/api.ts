@@ -4,6 +4,7 @@ import type {
   AnalysisResult,
   AwardReferralResponse,
   BoosterRow,
+  BrandRoiAnalytics,
   BattleScoreResult,
   BattleSummary,
   ChallengeStatus,
@@ -508,5 +509,21 @@ export const api = {
     credits: number;
   }> {
     return request(`/referral/stats?userId=${encodeURIComponent(userId)}`);
+  },
+
+  // ── Brand Analytics ───────────────────────────────────────────────────────────
+
+  trackBattlePageView(battleId: string, visitorToken: string): Promise<{ tracked: boolean }> {
+    return request(`/analytics/battle/${battleId}/view`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ visitorToken }),
+    });
+  },
+
+  getBrandRoi(battleId: string, brandUserId: string): Promise<BrandRoiAnalytics> {
+    return request<BrandRoiAnalytics>(
+      `/analytics/battle/${battleId}/roi?brandUserId=${encodeURIComponent(brandUserId)}`
+    );
   },
 };

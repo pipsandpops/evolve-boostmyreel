@@ -88,6 +88,7 @@ builder.Services.AddHttpClient<IVoteBoostService, VoteBoostService>();
 builder.Services.AddScoped<IBattleService, BattleService>();
 builder.Services.AddHostedService<BattleExpiryWorker>();
 builder.Services.AddHttpClient<IPrizePoolService, PrizePoolService>();
+builder.Services.AddScoped<IBrandAnalyticsService, BrandAnalyticsService>();
 
 // ── ImageGrowthEngine ─────────────────────────────────────────────────────────
 builder.Services.AddSingleton<ImageJobStore>();
@@ -309,6 +310,16 @@ using (var scope = app.Services.CreateScope())
             RazorpayPaymentId TEXT,
             Verified          INTEGER NOT NULL DEFAULT 0,
             CreatedAt         TEXT NOT NULL DEFAULT (datetime('now'))
+        )
+        """);
+
+    // ── Brand Analytics table ─────────────────────────────────────────────
+    db.Database.ExecuteSqlRaw("""
+        CREATE TABLE IF NOT EXISTS BattlePageViews (
+            Id           INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            BattleId     TEXT NOT NULL,
+            VisitorToken TEXT NOT NULL,
+            ViewedAt     TEXT NOT NULL DEFAULT (datetime('now'))
         )
         """);
 
