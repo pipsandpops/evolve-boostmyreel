@@ -21,21 +21,12 @@ public class BattleService : IBattleService
         { 168, 12 },
     };
 
-    // ── Scoring formula (per spec) ────────────────────────────────────────────
-    // Instagram & YouTube: Views → 25pts/1000  |  Likes → 10pts  |  Comments → 15pts
-    // Instagram only:      Saves → 20pts        |  Shares → 20pts
-    // YouTube only:        Shares → 20pts
-    // Both platform battle: each platform score weighted at 50% each
-    // Audience boost: 5pts per boost vote
-    private const double PtsPerThousandViews = 25.0;
-    private const double PtsPerLike          = 10.0;
-    private const double PtsPerComment       = 15.0;
-    private const double PtsPerSave          = 20.0;   // IG only
-    private const double PtsPerShare         = 20.0;
-    private const double PlatformWeight      = 0.5;    // each platform in "Both" battles
-    private const double VoteMul             = 5.0;    // audience boost pts
-
-    // Anti-cheat: deltas above this multiplier of baseline are capped
+    // ── Scoring formula (LOCKED — published publicly, cannot change mid-battle) ─
+    // Final Score = (Views × 0.40) + (Likes × 0.30) + (Comments × 0.20) + (Shares × 0.10)
+    // Cross-platform: IG Score + YT Score (same weights per platform)
+    // Audience boosts DO NOT affect this score — supporter leaderboard only.
+    //
+    // Anti-cheat cap: deltas > 3× baseline are capped to prevent sudden inflation.
     private const double AnticheatCapMultiplier = 3.0;
 
     public BattleService(AppDbContext db, ContentValidationService validator,
@@ -285,7 +276,13 @@ public class BattleService : IBattleService
                 opponentEntry?.Id   ?? "", opponentVotes),
             ScoreGap:             Math.Round(scoreGap, 2),
             Leader:               leader,
-            MomentumAlert:        momentumAlert
+            MomentumAlert:        momentumAlert,
+            ScoringFormula:       ScoringFormula.Description,
+            IsFrozen:             battle.ScoresFrozenAt.HasValue,
+            ScoresFrozenAt:       battle.ScoresFrozenAt,
+            AnomalyFlagged:       battle.AnomalyFlagged,
+            AnomalyReason:        battle.AnomalyReason,
+            WinnerAnnouncedAt:    battle.WinnerAnnouncedAt
         );
     }
 
@@ -295,20 +292,29 @@ public class BattleService : IBattleService
         var handle = string.IsNullOrEmpty(entry.InstagramHandle) ? entry.YouTubeHandle ?? "" : entry.InstagramHandle;
 
         // ── Instagram metrics ─────────────────────────────────────────────────
-        var latestIg = await _db.BattleMetricSnapshots
+        var igSnapshots = await _db.BattleMetricSnapshots
             .Where(s => s.EntryId == entry.Id && s.SnapshotPlatform == BattlePlatform.Instagram)
             .OrderByDescending(s => s.RecordedAt)
-            .FirstOrDefaultAsync(ct);
+            .Take(2)
+            .ToListAsync(ct);
+        var latestIg  = igSnapshots.FirstOrDefault();
+        var previousIg = igSnapshots.Count > 1 ? igSnapshots[1] : null;
 
         // ── YouTube metrics (only for Both-platform entries) ──────────────────
-        var latestYt = entry.SubmittedPlatform == BattlePlatform.Both
-            ? await _db.BattleMetricSnapshots
+        List<BattleMetricSnapshot>? ytSnapshots = null;
+        BattleMetricSnapshot? latestYt = null, previousYt = null;
+        if (entry.SubmittedPlatform == BattlePlatform.Both)
+        {
+            ytSnapshots = await _db.BattleMetricSnapshots
                 .Where(s => s.EntryId == entry.Id && s.SnapshotPlatform == BattlePlatform.YouTube)
                 .OrderByDescending(s => s.RecordedAt)
-                .FirstOrDefaultAsync(ct)
-            : null;
+                .Take(2)
+                .ToListAsync(ct);
+            latestYt   = ytSnapshots.FirstOrDefault();
+            previousYt = ytSnapshots?.Count > 1 ? ytSnapshots[1] : null;
+        }
 
-        // Fall back to non-platform-tagged snapshots for backward compatibility
+        // Fall back for backward compatibility
         if (latestIg is null && latestYt is null)
         {
             var latestAny = await _db.BattleMetricSnapshots
@@ -319,9 +325,11 @@ public class BattleService : IBattleService
             latestIg = latestAny;
         }
 
-        // ── Instagram score (25pts/1000 views, 10 likes, 15 comments, 20 saves, 20 shares)
-        double igScore = 0; long dViews = 0, dLikes = 0, dComments = 0, dSaves = 0, dShares = 0, dFollowers = 0;
+        // ── Instagram score — locked formula: Views×0.40 + Likes×0.30 + Comments×0.20 + Shares×0.10
+        double igScore = 0;
+        long dViews = 0, dLikes = 0, dComments = 0, dSaves = 0, dShares = 0, dFollowers = 0;
         string metricSource = "none";
+        bool spikeDetected = false;
 
         if (latestIg is not null)
         {
@@ -331,51 +339,141 @@ public class BattleService : IBattleService
             dSaves    = ApplyAnticheat(latestIg.Saves    - entry.BaselineSaves,    entry.BaselineSaves);
             dShares   = ApplyAnticheat(latestIg.Shares   - entry.BaselineShares,   entry.BaselineShares);
             dFollowers = ApplyAnticheat(latestIg.Followers - entry.BaselineFollowers, entry.BaselineFollowers);
-            igScore   = (dViews / 1000.0 * PtsPerThousandViews)
-                      + (dLikes    * PtsPerLike)
-                      + (dComments * PtsPerComment)
-                      + (dSaves    * PtsPerSave)
-                      + (dShares   * PtsPerShare);
+            igScore   = ScoringFormula.Calculate(dViews, dLikes, dComments, dShares);
             metricSource = latestIg.Source.ToString();
+
+            // Spike detection vs previous snapshot
+            if (previousIg is not null)
+                spikeDetected = DetectSpike(previousIg, latestIg);
         }
 
-        // ── YouTube score (25pts/1000 views, 10 likes, 15 comments, 20 shares — no saves)
+        // ── YouTube score — same locked formula
         double ytScore = 0;
         if (latestYt is not null)
         {
             var ytViews    = ApplyAnticheat(latestYt.Views    - entry.YtBaselineViews,    entry.YtBaselineViews);
             var ytLikes    = ApplyAnticheat(latestYt.Likes    - entry.YtBaselineLikes,    entry.YtBaselineLikes);
             var ytComments = ApplyAnticheat(latestYt.Comments - entry.YtBaselineComments, entry.YtBaselineComments);
-            var ytShares   = ApplyAnticheat(latestYt.Shares   - 0, 0); // YouTube shares tracked separately
-            ytScore = (ytViews / 1000.0 * PtsPerThousandViews)
-                    + (ytLikes    * PtsPerLike)
-                    + (ytComments * PtsPerComment)
-                    + (ytShares   * PtsPerShare);
+            var ytShares   = ApplyAnticheat(latestYt.Shares,  0);
+            ytScore = ScoringFormula.Calculate(ytViews, ytLikes, ytComments, ytShares);
+            if (previousYt is not null && DetectSpike(previousYt, latestYt))
+                spikeDetected = true;
         }
 
-        // Both-platform: each platform weighted 50%; single platform: full score
-        var platformScore = entry.SubmittedPlatform == BattlePlatform.Both
-            ? (igScore * PlatformWeight) + (ytScore * PlatformWeight)
-            : igScore + ytScore;
+        // Both-platform: IG Score + YT Score (additive, not averaged)
+        // Single platform: that platform's score is the final score
+        var organicScore = igScore + ytScore;
+        // NOTE: audience boost votes are NOT included in organic score
 
-        var combined = platformScore + (voteCount * VoteMul);
+        var lastUpdated = latestIg?.RecordedAt ?? latestYt?.RecordedAt;
 
         return new CreatorScore(
-            UserId:           entry.UserId,
-            Handle:           handle,
-            Score:            Math.Round(combined, 2),
-            DeltaViews:       dViews,
-            DeltaLikes:       dLikes,
-            DeltaComments:    dComments,
-            DeltaSaves:       dSaves,
-            DeltaShares:      dShares,
-            DeltaFollowers:   dFollowers,
-            MetricSource:     metricSource,
-            InstagramScore:   latestIg is not null ? Math.Round(igScore, 2) : null,
-            YouTubeScore:     latestYt is not null ? Math.Round(ytScore, 2) : null,
+            UserId:            entry.UserId,
+            Handle:            handle,
+            Score:             Math.Round(organicScore, 2),
+            DeltaViews:        dViews,
+            DeltaLikes:        dLikes,
+            DeltaComments:     dComments,
+            DeltaSaves:        dSaves,
+            DeltaShares:       dShares,
+            DeltaFollowers:    dFollowers,
+            MetricSource:      metricSource,
+            InstagramScore:    latestIg is not null ? Math.Round(igScore, 2) : null,
+            YouTubeScore:      latestYt is not null ? Math.Round(ytScore, 2) : null,
             SubmittedPlatform: entry.SubmittedPlatform.ToString(),
-            ValidationStatus:  entry.ValidationStatus.ToString()
+            ValidationStatus:  entry.ValidationStatus.ToString(),
+            LastUpdatedAt:     lastUpdated,
+            SpikeDetected:     spikeDetected
         );
+    }
+
+    // ── Score freeze (called at battle deadline) ──────────────────────────────
+
+    public async Task FreezeScoresAsync(string battleId, CancellationToken ct = default)
+    {
+        var battle = await _db.Battles.FindAsync([battleId], ct);
+        if (battle is null || battle.ScoresFrozenAt.HasValue) return;
+
+        var entries = await _db.BattleEntries.Where(e => e.BattleId == battleId).ToListAsync(ct);
+        bool anyAnomaly = false;
+        var anomalyReasons = new List<string>();
+
+        foreach (var entry in entries)
+        {
+            var snapshots = await _db.BattleMetricSnapshots
+                .Where(s => s.EntryId == entry.Id)
+                .OrderByDescending(s => s.RecordedAt)
+                .Take(2)
+                .ToListAsync(ct);
+
+            var latest   = snapshots.FirstOrDefault();
+            var previous = snapshots.Count > 1 ? snapshots[1] : null;
+
+            if (latest is null) continue;
+
+            var dViews    = Math.Max(0, latest.Views    - entry.BaselineViews);
+            var dLikes    = Math.Max(0, latest.Likes    - entry.BaselineLikes);
+            var dComments = Math.Max(0, latest.Comments - entry.BaselineComments);
+            var dShares   = Math.Max(0, latest.Shares   - entry.BaselineShares);
+
+            bool spike = previous is not null && DetectSpike(previous, latest);
+            string? spikeReason = null;
+            if (spike)
+            {
+                spikeReason = BuildSpikeReason(previous!, latest);
+                anyAnomaly  = true;
+                anomalyReasons.Add($"Entry {entry.Id[..8]}: {spikeReason}");
+            }
+
+            _db.BattleScoreAuditLogs.Add(new BattleScoreAuditLog
+            {
+                BattleId      = battleId,
+                EntryId       = entry.Id,
+                Platform      = latest.SnapshotPlatform.ToString(),
+                Views         = dViews,
+                Likes         = dLikes,
+                Comments      = dComments,
+                Shares        = dShares,
+                OrganicScore  = ScoringFormula.Calculate(dViews, dLikes, dComments, dShares),
+                SpikeDetected = spike,
+                SpikeReason   = spikeReason,
+                IsFinalFreeze = true,
+            });
+        }
+
+        battle.ScoresFrozenAt  = DateTime.UtcNow;
+        battle.AnomalyFlagged  = anyAnomaly;
+        battle.AnomalyReason   = anyAnomaly ? string.Join("; ", anomalyReasons) : null;
+        // If anomaly: delay winner announcement 1hr for manual review
+        battle.WinnerAnnouncedAt = anyAnomaly
+            ? DateTime.UtcNow.AddHours(1)
+            : DateTime.UtcNow;
+
+        await _db.SaveChangesAsync(ct);
+        _logger.LogInformation("Scores frozen for battle {BattleId}. Anomaly={Anomaly}", battleId, anyAnomaly);
+    }
+
+    private static bool DetectSpike(BattleMetricSnapshot prev, BattleMetricSnapshot curr)
+    {
+        // Flag if any metric grew more than SpikeThreshold × in one snapshot window
+        return IsSpike(prev.Views, curr.Views)
+            || IsSpike(prev.Likes, curr.Likes)
+            || IsSpike(prev.Comments, curr.Comments);
+    }
+
+    private static bool IsSpike(long prev, long curr)
+    {
+        if (prev <= 50) return false; // ignore tiny baselines
+        return curr > 0 && (double)curr / prev >= ScoringFormula.SpikeThreshold;
+    }
+
+    private static string BuildSpikeReason(BattleMetricSnapshot prev, BattleMetricSnapshot curr)
+    {
+        var parts = new List<string>();
+        if (IsSpike(prev.Views,    curr.Views))    parts.Add($"Views {prev.Views}→{curr.Views} ({curr.Views / Math.Max(1, prev.Views):F1}×)");
+        if (IsSpike(prev.Likes,    curr.Likes))    parts.Add($"Likes {prev.Likes}→{curr.Likes} ({curr.Likes / Math.Max(1, prev.Likes):F1}×)");
+        if (IsSpike(prev.Comments, curr.Comments)) parts.Add($"Comments {prev.Comments}→{curr.Comments}");
+        return string.Join(", ", parts);
     }
 
     private static long ApplyAnticheat(long delta, long baseline)

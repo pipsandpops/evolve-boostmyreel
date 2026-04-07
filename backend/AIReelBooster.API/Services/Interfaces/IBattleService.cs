@@ -18,6 +18,9 @@ public interface IBattleService
     // Metrics
     Task RecordManualMetricsAsync(string entryId, string userId, MetricInput metrics, BattlePlatform platform, CancellationToken ct = default);
 
+    // Score freeze & audit (called by BattleExpiryWorker at deadline)
+    Task FreezeScoresAsync(string battleId, CancellationToken ct = default);
+
     // Audience
     Task<VoteResult> VoteAsync(string battleId, string entryId, string voterToken, string? voterIp, CancellationToken ct = default);
 
@@ -68,9 +71,16 @@ public record BattleScoreResult(
     CreatorScore Opponent,
     AudienceVoteTally AudienceVotes,
     // Live insight fields
-    double ScoreGap,         // abs difference
-    string? Leader,          // handle of who's ahead
-    string? MomentumAlert    // e.g. "@creator is gaining fast! ⚡"
+    double ScoreGap,
+    string? Leader,
+    string? MomentumAlert,
+    // Transparency & freeze
+    string   ScoringFormula,       // published formula text
+    bool     IsFrozen,             // scores hard-locked at deadline
+    DateTime? ScoresFrozenAt,
+    bool     AnomalyFlagged,
+    string?  AnomalyReason,
+    DateTime? WinnerAnnouncedAt    // delayed 1hr after freeze if anomaly
 );
 
 public record CreatorScore(
@@ -84,11 +94,13 @@ public record CreatorScore(
     long DeltaShares,
     long DeltaFollowers,
     string MetricSource,
-    // Multi-platform breakdown (non-null when battle.Platform == Both)
+    // Multi-platform breakdown
     double? InstagramScore = null,
     double? YouTubeScore = null,
     string SubmittedPlatform = "Instagram",
-    string ValidationStatus = "Skipped"
+    string ValidationStatus = "Skipped",
+    DateTime? LastUpdatedAt = null,   // when latest snapshot was taken
+    bool SpikeDetected = false        // anomaly flag for this entry
 );
 
 public record AudienceVoteTally(string ChallengerEntryId, int ChallengerVotes, string OpponentEntryId, int OpponentVotes);
