@@ -80,6 +80,7 @@ builder.Services.AddScoped<ISceneDetectionService, SceneDetectionService>();
 builder.Services.AddScoped<ISegmentRankingService, SegmentRankingService>();
 builder.Services.AddScoped<IReelVideoProcessor, ReelVideoProcessor>();
 builder.Services.AddScoped<IAutoReelService, AutoReelService>();
+builder.Services.AddHttpClient<IAutoReframeService, AutoReframeService>();
 builder.Services.AddHostedService<ReelGenerationWorker>();
 
 // ── Reel Streak Battle ────────────────────────────────────────────────────────

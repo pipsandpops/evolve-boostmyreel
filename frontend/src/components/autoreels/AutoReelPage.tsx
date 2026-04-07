@@ -310,6 +310,7 @@ interface Props {
 export function AutoReelPage({ userId, onBack, onUpgrade }: Props) {
   const { state, progressPercent, currentStep, reelJobStatus, reels, reelJobId, isPremium, error, start, reset } = useAutoReel();
   const [selectedReel, setSelectedReel] = useState<number | null>(null);
+  const [enableSmartReframe, setEnableSmartReframe] = useState(false);
 
   const isIdle       = state === 'idle';
   const isProcessing = state === 'uploading' || state === 'analyzing' || state === 'generating';
@@ -424,7 +425,45 @@ export function AutoReelPage({ userId, onBack, onUpgrade }: Props) {
             </div>
 
             <div style={{ maxWidth: 640, margin: '0 auto' }}>
-              <ReelUploader onUpload={file => start(file, userId)} />
+              {/* Smart Reframe toggle */}
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 12,
+                background: enableSmartReframe
+                  ? 'linear-gradient(135deg, #eef2ff, #f5f3ff)'
+                  : 'white',
+                border: `1.5px solid ${enableSmartReframe ? '#c7d2fe' : '#e2e8f0'}`,
+                borderRadius: 14, padding: '14px 18px', marginBottom: 16,
+                cursor: 'pointer', transition: 'all 0.2s',
+                userSelect: 'none',
+              }} onClick={() => setEnableSmartReframe(v => !v)}>
+                {/* Toggle pill */}
+                <div style={{
+                  width: 42, height: 24, borderRadius: 99, flexShrink: 0,
+                  background: enableSmartReframe
+                    ? 'linear-gradient(135deg, #4f46e5, #7c3aed)'
+                    : '#e2e8f0',
+                  position: 'relative', transition: 'background 0.2s',
+                }}>
+                  <div style={{
+                    position: 'absolute', top: 3,
+                    left: enableSmartReframe ? 21 : 3,
+                    width: 18, height: 18, borderRadius: '50%',
+                    background: 'white',
+                    boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
+                    transition: 'left 0.2s',
+                  }} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: enableSmartReframe ? '#4338ca' : '#0f172a', margin: '0 0 1px' }}>
+                    🎯 Enable Smart Reframe <span style={{ fontSize: 11, fontWeight: 600, color: '#8b5cf6', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 99, padding: '1px 8px', marginLeft: 4 }}>AI Camera Director</span>
+                  </p>
+                  <p style={{ fontSize: 12, color: '#64748b', margin: 0 }}>
+                    AI tracks the main speaker and dynamically reframes the crop — ideal for podcasts &amp; interviews
+                  </p>
+                </div>
+              </div>
+
+              <ReelUploader onUpload={file => start(file, userId, enableSmartReframe)} />
             </div>
 
             {/* How it works */}

@@ -1,6 +1,7 @@
 using AIReelBooster.API.AutoReelGenerator.Models;
 using AIReelBooster.API.Models.Domain;
 
+
 namespace AIReelBooster.API.AutoReelGenerator.Interfaces;
 
 /// <summary>
@@ -31,6 +32,11 @@ public interface IReelVideoProcessor
     ///   Pass null or empty to skip subtitles.
     /// </param>
     /// <param name="clipStartOffset">Original start time used to adjust subtitle timestamps.</param>
+    /// <param name="cropInstructions">
+    ///   Optional Smart Reframe crop timeline. When non-empty, the processor uses dynamic
+    ///   subject-following crop instead of a static centre crop.
+    ///   Times are clip-relative (0 = clip start).
+    /// </param>
     /// <returns>Absolute path to the finished vertical reel.</returns>
     Task<string> ConvertToVerticalAsync(
         string                        clipPath,
@@ -39,5 +45,6 @@ public interface IReelVideoProcessor
         bool                          enableZoom,
         IReadOnlyList<SubtitleEntry>? subtitles,
         TimeSpan                      clipStartOffset,
+        IReadOnlyList<CropInstruction>? cropInstructions = null,
         CancellationToken             ct = default);
 }

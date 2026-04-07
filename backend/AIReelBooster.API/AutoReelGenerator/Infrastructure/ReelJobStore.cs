@@ -11,12 +11,13 @@ public class ReelJobStore
 {
     private readonly ConcurrentDictionary<string, ReelJob> _jobs = new();
 
-    public ReelJob CreateJob(string sourceJobId, string? userId)
+    public ReelJob CreateJob(string sourceJobId, string? userId, bool enableSmartReframe = false)
     {
         var job = new ReelJob
         {
-            SourceJobId = sourceJobId,
-            UserId      = userId,
+            SourceJobId        = sourceJobId,
+            UserId             = userId,
+            EnableSmartReframe = enableSmartReframe,
         };
         _jobs[job.ReelJobId] = job;
         return job;

@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text;
 using AIReelBooster.API.AutoReelGenerator.Interfaces;
+using AIReelBooster.API.AutoReelGenerator.Models;
 using AIReelBooster.API.Configuration;
 using AIReelBooster.API.Models.Domain;
 using Microsoft.Extensions.Options;
@@ -72,13 +73,14 @@ public class ReelVideoProcessor : IReelVideoProcessor
     // ── Convert to vertical (9:16) ────────────────────────────────────────────
 
     public async Task<string> ConvertToVerticalAsync(
-        string                        clipPath,
-        string                        outputDir,
-        string                        fileName,
-        bool                          enableZoom,
-        IReadOnlyList<SubtitleEntry>? subtitles,
-        TimeSpan                      clipStartOffset,
-        CancellationToken             ct = default)
+        string                          clipPath,
+        string                          outputDir,
+        string                          fileName,
+        bool                            enableZoom,
+        IReadOnlyList<SubtitleEntry>?   subtitles,
+        TimeSpan                        clipStartOffset,
+        IReadOnlyList<CropInstruction>? cropInstructions = null,
+        CancellationToken               ct = default)
     {
         await EnsureFFmpegAsync(ct);
 
@@ -87,10 +89,24 @@ public class ReelVideoProcessor : IReelVideoProcessor
         var w          = _settings.OutputWidth;
         var h          = _settings.OutputHeight;
 
-        // Step 1 — centre-crop the widest 9:16 strip, then scale
-        //   crop width  = ih * 9/16
-        //   crop x-offset centres it: (iw - ih*9/16) / 2
-        var cropFilter = $"crop=ih*9/16:ih:(iw-ih*9/16)/2:0,scale={w}:{h}";
+        // Step 1 — crop to 9:16, then scale.
+        // When Smart Reframe crop instructions are provided, build a dynamic
+        // x-expression using FFmpeg's if(between(t,...)) chain so the camera
+        // follows the detected subject. Otherwise fall back to centre crop.
+        string cropFilter;
+        if (cropInstructions is { Count: > 0 })
+        {
+            var xExpr = BuildDynamicXExpression(cropInstructions);
+            // Width and height are taken from the first instruction (all equal).
+            var ci = cropInstructions[0];
+            cropFilter = $"crop={ci.Width}:{ci.Height}:{xExpr}:{ci.Y},scale={w}:{h}";
+            _logger.LogInformation("ConvertToVertical: using SmartReframe crop ({Count} segments)", cropInstructions.Count);
+        }
+        else
+        {
+            // Static centre-crop: width = ih*9/16, x centres it
+            cropFilter = $"crop=ih*9/16:ih:(iw-ih*9/16)/2:0,scale={w}:{h}";
+        }
 
         // Step 2 — optional gentle zoom-pan (1.00× → 1.08× over the clip)
         var videoFilter = enableZoom
@@ -148,6 +164,30 @@ public class ReelVideoProcessor : IReelVideoProcessor
         }
 
         return outputPath;
+    }
+
+    // ── Smart Reframe helpers ─────────────────────────────────────────────────
+
+    /// <summary>
+    /// Builds a nested FFmpeg <c>if(between(t,start,end),x,...)</c> expression
+    /// that selects the correct crop x-offset for each time window.
+    ///
+    /// Example output (2 segments):
+    ///   if(between(t,0,2),320,if(between(t,2,4),380,350))
+    /// </summary>
+    private static string BuildDynamicXExpression(IReadOnlyList<CropInstruction> instructions)
+    {
+        // Build right-to-left: innermost = last segment's X as fallback
+        var ic = System.Globalization.CultureInfo.InvariantCulture;
+        var expr = instructions[^1].X.ToString();
+
+        for (var i = instructions.Count - 2; i >= 0; i--)
+        {
+            var ci = instructions[i];
+            expr = $"if(between(t,{ci.StartTime.ToString("F3", ic)},{ci.EndTime.ToString("F3", ic)}),{ci.X},{expr})";
+        }
+
+        return expr;
     }
 
     // ── SRT helper ────────────────────────────────────────────────────────────

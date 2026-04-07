@@ -263,11 +263,11 @@ export const api = {
 
   // ── Auto Reel Generator ──────────────────────────────────────────────────────
 
-  generateReels(sourceJobId: string, userId: string | null): Promise<{ reelJobId: string }> {
+  generateReels(sourceJobId: string, userId: string | null, enableSmartReframe = false): Promise<{ reelJobId: string }> {
     return request<{ reelJobId: string }>('/auto-reel/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sourceJobId, userId }),
+      body: JSON.stringify({ sourceJobId, userId, enableSmartReframe }),
     });
   },
 

@@ -20,7 +20,7 @@ interface UseAutoReelResult {
   isPremium: boolean;
   unlockedCount: number;
   error: string | null;
-  start: (file: File, userId: string | null) => Promise<void>;
+  start: (file: File, userId: string | null, enableSmartReframe?: boolean) => Promise<void>;
   reset: () => void;
 }
 
@@ -105,7 +105,7 @@ export function useAutoReel(): UseAutoReelResult {
 
   // ── Main entry ────────────────────────────────────────────────────────────
 
-  const start = useCallback(async (file: File, userId: string | null) => {
+  const start = useCallback(async (file: File, userId: string | null, enableSmartReframe = false) => {
     stopPolling();
     setState('uploading');
     setProgress(5);
@@ -129,7 +129,7 @@ export function useAutoReel(): UseAutoReelResult {
       setState('generating');
       setProgress(70);
       setStep('Detecting scenes…');
-      const { reelJobId: rid } = await api.generateReels(videoJobId, userId);
+      const { reelJobId: rid } = await api.generateReels(videoJobId, userId, enableSmartReframe);
       setReelJobId(rid);
 
       // 4. Poll reel job
