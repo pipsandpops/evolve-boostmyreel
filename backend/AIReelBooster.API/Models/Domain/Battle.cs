@@ -56,6 +56,12 @@ public class Battle
     public decimal? PrizePoolAmount  { get; set; }
     public string? PrizeCurrency     { get; set; }
     public string? ContentGuidelines { get; set; }
+
+    // ── Score freeze & fraud audit ────────────────────────────────────────────
+    public DateTime? ScoresFrozenAt    { get; set; }   // set at EndsAt
+    public bool      AnomalyFlagged    { get; set; } = false;
+    public string?   AnomalyReason     { get; set; }
+    public DateTime? WinnerAnnouncedAt { get; set; }   // = ScoresFrozenAt + 1hr if anomaly
 }
 
 // ── Creator's reel entry ──────────────────────────────────────────────────────
@@ -144,6 +150,46 @@ public class VoteBoost
     public string? RazorpayPaymentId  { get; set; }
     public bool    Verified           { get; set; } = false;
     public DateTime CreatedAt         { get; set; } = DateTime.UtcNow;
+}
+
+// ── Score audit log (freeze + spike detection) ────────────────────────────────
+
+public class BattleScoreAuditLog
+{
+    public int      Id               { get; set; }
+    public string   BattleId         { get; set; } = string.Empty;
+    public string   EntryId          { get; set; } = string.Empty;
+    public string   Platform         { get; set; } = "Instagram";
+    // Raw delta metrics at snapshot time
+    public long     Views            { get; set; }
+    public long     Likes            { get; set; }
+    public long     Comments         { get; set; }
+    public long     Shares           { get; set; }
+    public double   OrganicScore     { get; set; }
+    // Fraud / anomaly flags
+    public bool     SpikeDetected    { get; set; } = false;
+    public string?  SpikeReason      { get; set; }
+    public bool     IsFinalFreeze    { get; set; } = false;   // true = score locked snapshot
+    public DateTime RecordedAt       { get; set; } = DateTime.UtcNow;
+}
+
+// ── Published scoring formula (single source of truth) ───────────────────────
+
+public static class ScoringFormula
+{
+    public const double ViewsWeight    = 0.40;
+    public const double LikesWeight    = 0.30;
+    public const double CommentsWeight = 0.20;
+    public const double SharesWeight   = 0.10;
+
+    // Spike detection threshold: >5x growth in one snapshot window = anomaly
+    public const double SpikeThreshold = 5.0;
+
+    public const string Description =
+        "Final Score = (Views × 0.40) + (Likes × 0.30) + (Comments × 0.20) + (Shares × 0.10)";
+
+    public static double Calculate(long views, long likes, long comments, long shares)
+        => (views * ViewsWeight) + (likes * LikesWeight) + (comments * CommentsWeight) + (shares * SharesWeight);
 }
 
 // ── Boost tier definitions ────────────────────────────────────────────────────

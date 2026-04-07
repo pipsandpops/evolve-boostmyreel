@@ -87,6 +87,7 @@ public class ReelGenerationWorker : BackgroundService
         var ranker          = scope.ServiceProvider.GetRequiredService<ISegmentRankingService>();
         var videoProcessor  = scope.ServiceProvider.GetRequiredService<IReelVideoProcessor>();
         var aiGeneration    = scope.ServiceProvider.GetRequiredService<IAIGenerationService>();
+        var autoReframe     = scope.ServiceProvider.GetRequiredService<IAutoReframeService>();
 
         var subtitles       = videoJob.AnalysisResult?.Subtitles;
         var sourceVideo     = videoJob.OriginalFilePath!;
@@ -164,7 +165,30 @@ public class ReelGenerationWorker : BackgroundService
                 SetStatus(reelJob, ReelJobStatus.Processing, progress + 5,
                     $"Converting clip {i + 1} to vertical…");
 
-                // 3b. Convert to 9:16
+                // 3b. Smart Reframe analysis (optional — runs Claude Vision per clip)
+                List<CropInstruction>? cropInstructions = null;
+                if (reelJob.EnableSmartReframe)
+                {
+                    SetStatus(reelJob, ReelJobStatus.Processing, progress + 3,
+                        $"AI reframing clip {i + 1}…");
+                    try
+                    {
+                        cropInstructions = await autoReframe.AnalyzeAsync(
+                            sourceVideo, seg.StartTime, seg.EndTime, ct);
+                        _logger.LogInformation(
+                            "ReelJob {Id}: SmartReframe clip {Clip} → {Count} crop instructions",
+                            reelJobId, i, cropInstructions.Count);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex,
+                            "ReelJob {Id}: SmartReframe failed for clip {Clip} — using centre crop",
+                            reelJobId, i);
+                        cropInstructions = null;
+                    }
+                }
+
+                // 3c. Convert to 9:16 (with optional smart crop)
                 var reelPath = await videoProcessor.ConvertToVerticalAsync(
                     rawPath,
                     reelDir,
@@ -172,6 +196,7 @@ public class ReelGenerationWorker : BackgroundService
                     _settings.EnableZoom,
                     _settings.EnableSubtitles ? subtitles : null,
                     seg.StartTime,
+                    cropInstructions,
                     ct);
 
                 // Clean up the intermediate raw clip

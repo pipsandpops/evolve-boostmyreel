@@ -22,6 +22,7 @@ public interface IAutoReelService
     Task<string> StartGenerationAsync(
         string            sourceJobId,
         string?           userId,
+        bool              enableSmartReframe = false,
         CancellationToken ct = default);
 
     /// <summary>Returns the current state of a reel job, or null if not found.</summary>

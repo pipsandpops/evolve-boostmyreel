@@ -43,6 +43,7 @@ public class AutoReelController : ControllerBase
             var reelJobId = await _autoReelService.StartGenerationAsync(
                 request.SourceJobId,
                 request.UserId,
+                request.EnableSmartReframe,
                 ct);
 
             _logger.LogInformation("ReelJob {Id} created for source {Src} (user {User})",
@@ -215,4 +216,7 @@ public class AutoReelController : ControllerBase
 
 // ── Request models ────────────────────────────────────────────────────────────
 
-public record GenerateReelRequest(string SourceJobId, string? UserId);
+public record GenerateReelRequest(
+    string SourceJobId,
+    string? UserId,
+    bool EnableSmartReframe = false);

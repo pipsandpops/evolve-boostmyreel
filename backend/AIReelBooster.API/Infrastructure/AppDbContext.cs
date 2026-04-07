@@ -33,6 +33,9 @@ public class AppDbContext : DbContext
     public DbSet<BrandCampaign>         BrandCampaigns        => Set<BrandCampaign>();
     public DbSet<BrandCampaignEntry>    BrandCampaignEntries  => Set<BrandCampaignEntry>();
 
+    // ── Fair Scoring ──────────────────────────────────────────────────────────
+    public DbSet<BattleScoreAuditLog>   BattleScoreAuditLogs  => Set<BattleScoreAuditLog>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<UserPlan>().HasKey(u => u.UserId);
@@ -60,5 +63,8 @@ public class AppDbContext : DbContext
         // Brand campaign keys
         modelBuilder.Entity<BrandCampaign>().HasKey(c => c.Id);
         modelBuilder.Entity<BrandCampaignEntry>().HasKey(e => e.Id);
+
+        // Fair scoring keys
+        modelBuilder.Entity<BattleScoreAuditLog>().HasKey(a => a.Id);
     }
 }

@@ -13,14 +13,20 @@ public enum ReelJobStatus
 
 public class ReelJob
 {
-    public string        ReelJobId      { get; set; } = Guid.NewGuid().ToString("N")[..16];
-    public string        SourceJobId    { get; set; } = null!;
-    public string?       UserId         { get; set; }
-    public ReelJobStatus Status         { get; set; } = ReelJobStatus.Pending;
+    public string        ReelJobId       { get; set; } = Guid.NewGuid().ToString("N")[..16];
+    public string        SourceJobId     { get; set; } = null!;
+    public string?       UserId          { get; set; }
+    public ReelJobStatus Status          { get; set; } = ReelJobStatus.Pending;
     public int           ProgressPercent { get; set; }
-    public string?       CurrentStep    { get; set; }
-    public string?       ErrorMessage   { get; set; }
+    public string?       CurrentStep     { get; set; }
+    public string?       ErrorMessage    { get; set; }
     public List<GeneratedReel> GeneratedReels { get; set; } = [];
-    public DateTime      CreatedAt      { get; set; } = DateTime.UtcNow;
-    public DateTime?     CompletedAt    { get; set; }
+    public DateTime      CreatedAt       { get; set; } = DateTime.UtcNow;
+    public DateTime?     CompletedAt     { get; set; }
+
+    /// <summary>
+    /// When true the pipeline runs Claude Vision frame analysis and uses
+    /// dynamic subject-following crop instead of the static centre crop.
+    /// </summary>
+    public bool          EnableSmartReframe { get; set; } = false;
 }

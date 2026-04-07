@@ -30,6 +30,7 @@ public class AutoReelService : IAutoReelService
     public async Task<string> StartGenerationAsync(
         string            sourceJobId,
         string?           userId,
+        bool              enableSmartReframe = false,
         CancellationToken ct = default)
     {
         var videoJob = _videoJobStore.Get(sourceJobId)
@@ -45,7 +46,7 @@ public class AutoReelService : IAutoReelService
             throw new InvalidOperationException(
                 $"Source job '{sourceJobId}' has no accessible video file.");
 
-        var reelJob = _reelJobStore.CreateJob(sourceJobId, userId);
+        var reelJob = _reelJobStore.CreateJob(sourceJobId, userId, enableSmartReframe);
         await _queue.EnqueueAsync(reelJob.ReelJobId, ct);
         return reelJob.ReelJobId;
     }
