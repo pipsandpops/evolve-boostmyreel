@@ -31,15 +31,15 @@ public class AutoReframeService : IAutoReframeService
     private readonly FFmpegSettings  _ffmpeg;
     private readonly ILogger<AutoReframeService> _logger;
 
-    // Seconds between sampled frames — 2 s gives a smooth result without
-    // hammering the Claude API too hard on short clips.
-    private const double SampleIntervalSeconds = 2.0;
+    // Seconds between sampled frames — 1 s gives fine-grained tracking.
+    private const double SampleIntervalSeconds = 1.0;
 
     // Max frames to analyse per clip (caps API cost on very long segments).
-    private const int MaxFrames = 15;
+    private const int MaxFrames = 20;
 
-    // Exponential smoothing weight for NEW position (lower = smoother but slower).
-    private const double SmoothAlpha = 0.2;
+    // Exponential smoothing weight for NEW position.
+    // 0.4 = responsive tracking without harsh jumps.
+    private const double SmoothAlpha = 0.4;
 
     public AutoReframeService(
         HttpClient                    http,
@@ -70,8 +70,18 @@ public class AutoReframeService : IAutoReframeService
             return [];
         }
 
+        // For portrait (9:16) output from landscape (16:9) input:
+        //   cropWidth  = inputHeight × 9/16  (slim vertical strip)
+        //   cropHeight = inputHeight × 9/16 × 16/9 = inputHeight
+        // We also compute a vertical crop to avoid being stuck at the top —
+        // if the input is taller than the 9:16 strip is wide... actually for
+        // standard 16:9 sources cropHeight == inputHeight, so Y is always 0.
+        // For vertical tracking we instead shift a sub-height crop window.
+        // Use 75% of inputHeight as crop height so we can pan vertically.
         var cropWidth  = (int)(inputHeight * 9.0 / 16.0);
-        var cropHeight = inputHeight;
+        var cropHeight = (int)(cropWidth  * 16.0 / 9.0);   // = inputHeight for 16:9 source
+        // Actual vertical pan range (pixels available below Y=0)
+        var maxY = Math.Max(0, inputHeight - cropHeight);
 
         // Guard: source video must be wider than a 9:16 strip to reframe
         if (cropWidth >= inputWidth)
@@ -106,49 +116,54 @@ public class AutoReframeService : IAutoReframeService
 
             // ── 3. Analyse frames with Claude Vision ──────────────────────────
             var instructions = new List<CropInstruction>();
-            double smoothX   = inputWidth / 2.0 - cropWidth / 2.0;  // start centred
+            double smoothX   = inputWidth  / 2.0 - cropWidth  / 2.0;  // start centred
+            double smoothY   = maxY * 0.15;                            // start near top (face area)
 
             for (var i = 0; i < frameFiles.Count; i++)
             {
                 ct.ThrowIfCancellationRequested();
 
-                var frameTime = i * (clipDuration / frameFiles.Count);      // clip-relative seconds
+                var frameTime = i * (clipDuration / frameFiles.Count);
                 var nextTime  = (i + 1) * (clipDuration / frameFiles.Count);
 
-                double subjectCenterX = 0.5;  // fallback = centre
+                double subjectX = 0.5, subjectY = 0.35;  // fallback = centre-top
 
                 try
                 {
-                    subjectCenterX = await AnalyzeFrameAsync(frameFiles[i], ct);
+                    (subjectX, subjectY) = await AnalyzeFrameAsync(frameFiles[i], ct);
                 }
                 catch (Exception ex)
                 {
                     _logger.LogWarning(ex, "SmartReframe: frame {I} analysis failed — using centre", i);
                 }
 
-                // Convert normalised centre to pixel crop-left
-                var rawX = subjectCenterX * inputWidth - cropWidth / 2.0;
-
-                // Clamp so crop window stays within frame
+                // ── X: centre crop window on subject ──────────────────────────
+                var rawX     = subjectX * inputWidth - cropWidth / 2.0;
                 var clampedX = Math.Max(0, Math.Min(rawX, inputWidth - cropWidth));
+                smoothX      = smoothX * (1 - SmoothAlpha) + clampedX * SmoothAlpha;
+                var finalX   = (int)Math.Round(Math.Max(0, Math.Min(smoothX, inputWidth - cropWidth)));
 
-                // Apply exponential smoothing to reduce jitter
-                smoothX = smoothX * (1 - SmoothAlpha) + clampedX * SmoothAlpha;
-                var finalX = (int)Math.Round(Math.Max(0, Math.Min(smoothX, inputWidth - cropWidth)));
+                // ── Y: position face in upper-third of crop window ────────────
+                // Target Y so face sits at ~28% from top of crop window
+                var facePixelY  = subjectY * inputHeight;
+                var targetY     = facePixelY - cropHeight * 0.28;
+                var clampedY    = Math.Max(0, Math.Min(targetY, maxY));
+                smoothY         = smoothY * (1 - SmoothAlpha) + clampedY * SmoothAlpha;
+                var finalY      = (int)Math.Round(Math.Max(0, Math.Min(smoothY, maxY)));
 
                 instructions.Add(new CropInstruction
                 {
                     StartTime = frameTime,
                     EndTime   = nextTime,
                     X         = finalX,
-                    Y         = 0,
+                    Y         = finalY,
                     Width     = cropWidth,
                     Height    = cropHeight,
                 });
 
                 _logger.LogDebug(
-                    "SmartReframe: t={T:F1}s subjectX={SX:F2} cropX={CX}",
-                    frameTime, subjectCenterX, finalX);
+                    "SmartReframe: t={T:F1}s face=({SX:F2},{SY:F2}) crop=({CX},{CY})",
+                    frameTime, subjectX, subjectY, finalX, finalY);
             }
 
             _logger.LogInformation("SmartReframe: generated {Count} crop instructions", instructions.Count);
@@ -207,8 +222,8 @@ public class AutoReframeService : IAutoReframeService
 
     // ── Claude Vision analysis ────────────────────────────────────────────────
 
-    /// <returns>Normalised subject x-centre (0.0 = left, 1.0 = right).</returns>
-    private async Task<double> AnalyzeFrameAsync(string framePath, CancellationToken ct)
+    /// <returns>Normalised subject position (x: 0=left→1=right, y: 0=top→1=bottom).</returns>
+    private async Task<(double x, double y)> AnalyzeFrameAsync(string framePath, CancellationToken ct)
     {
         var imageBytes  = await File.ReadAllBytesAsync(framePath, ct);
         var base64Image = Convert.ToBase64String(imageBytes);
@@ -237,10 +252,12 @@ public class AutoReframeService : IAutoReframeService
                         new
                         {
                             type = "text",
-                            text = "Where is the main subject (face or speaker) in this image? "
-                                 + "Reply ONLY with a JSON object like {\"x\":0.5} where x is the "
-                                 + "horizontal center of the subject as a fraction (0=left edge, 1=right edge). "
-                                 + "If no subject, reply {\"x\":0.5}.",
+                            text = "Find the main person's face or head in this image. "
+                                 + "Reply ONLY with a JSON object: {\"x\":0.5,\"y\":0.35} "
+                                 + "where x is the horizontal center of their face (0=left, 1=right) "
+                                 + "and y is the vertical center of their face (0=top, 1=bottom). "
+                                 + "If there are multiple people, pick the most prominent/centered one. "
+                                 + "If no face detected, reply {\"x\":0.5,\"y\":0.35}.",
                         },
                     },
                 },
@@ -262,17 +279,16 @@ public class AutoReframeService : IAutoReframeService
         var text      = doc.RootElement
                            .GetProperty("content")[0]
                            .GetProperty("text")
-                           .GetString() ?? "{\"x\":0.5}";
+                           .GetString() ?? "{\"x\":0.5,\"y\":0.35}";
 
-        // Parse {\"x\": 0.42} — tolerant extraction
+        // Parse {\"x\": 0.42, \"y\": 0.28} — tolerant extraction
         using var parsed = JsonDocument.Parse(ExtractJsonObject(text));
-        if (parsed.RootElement.TryGetProperty("x", out var xProp) &&
-            xProp.TryGetDouble(out var xVal))
-        {
-            return Math.Clamp(xVal, 0.0, 1.0);
-        }
+        var xVal = parsed.RootElement.TryGetProperty("x", out var xProp) && xProp.TryGetDouble(out var xd)
+            ? Math.Clamp(xd, 0.0, 1.0) : 0.5;
+        var yVal = parsed.RootElement.TryGetProperty("y", out var yProp) && yProp.TryGetDouble(out var yd)
+            ? Math.Clamp(yd, 0.0, 1.0) : 0.35;
 
-        return 0.5;
+        return (xVal, yVal);
     }
 
     /// <summary>Extracts the first JSON object {...} from a string (Claude sometimes adds prose).</summary>

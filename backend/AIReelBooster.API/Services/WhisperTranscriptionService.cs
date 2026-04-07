@@ -64,7 +64,13 @@ public class WhisperTranscriptionService : ITranscriptionService
                 form.Add(new StringContent("word"), "timestamp_granularities[]");
             }
         }
-        response.EnsureSuccessStatusCode();
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync(ct);
+            _logger.LogError("Whisper API error {Status}: {Body}", (int)response.StatusCode, body);
+            throw new HttpRequestException(
+                $"Whisper returned {(int)response.StatusCode}: {body}", null, response.StatusCode);
+        }
 
         var json = await response.Content.ReadAsStringAsync(ct);
         var doc = JsonDocument.Parse(json);

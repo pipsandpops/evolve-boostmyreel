@@ -96,10 +96,10 @@ public class ReelVideoProcessor : IReelVideoProcessor
         string cropFilter;
         if (cropInstructions is { Count: > 0 })
         {
-            var xExpr = BuildDynamicXExpression(cropInstructions);
-            // Width and height are taken from the first instruction (all equal).
-            var ci = cropInstructions[0];
-            cropFilter = $"crop={ci.Width}:{ci.Height}:{xExpr}:{ci.Y},scale={w}:{h}";
+            var xExpr = BuildDynamicExpression(cropInstructions, c => c.X);
+            var yExpr = BuildDynamicExpression(cropInstructions, c => c.Y);
+            var ci    = cropInstructions[0];
+            cropFilter = $"crop={ci.Width}:{ci.Height}:{xExpr}:{yExpr},scale={w}:{h}";
             _logger.LogInformation("ConvertToVertical: using SmartReframe crop ({Count} segments)", cropInstructions.Count);
         }
         else
@@ -175,16 +175,26 @@ public class ReelVideoProcessor : IReelVideoProcessor
     /// Example output (2 segments):
     ///   if(between(t,0,2),320,if(between(t,2,4),380,350))
     /// </summary>
-    private static string BuildDynamicXExpression(IReadOnlyList<CropInstruction> instructions)
+    /// <summary>
+    /// Builds a nested FFmpeg <c>if(between(t\,start\,end)\,val\,...)</c>
+    /// expression for a given crop dimension (X or Y).
+    ///
+    /// Commas are escaped as <c>\,</c> so FFmpeg's filtergraph parser does not
+    /// treat them as filter-chain separators (we use ArgumentList — no shell layer).
+    /// </summary>
+    private static string BuildDynamicExpression(
+        IReadOnlyList<CropInstruction> instructions,
+        Func<CropInstruction, int>     selector)
     {
-        // Build right-to-left: innermost = last segment's X as fallback
-        var ic = System.Globalization.CultureInfo.InvariantCulture;
-        var expr = instructions[^1].X.ToString();
+        var ic   = System.Globalization.CultureInfo.InvariantCulture;
+        var expr = selector(instructions[^1]).ToString();
 
         for (var i = instructions.Count - 2; i >= 0; i--)
         {
-            var ci = instructions[i];
-            expr = $"if(between(t,{ci.StartTime.ToString("F3", ic)},{ci.EndTime.ToString("F3", ic)}),{ci.X},{expr})";
+            var ci    = instructions[i];
+            var start = ci.StartTime.ToString("F3", ic);
+            var end   = ci.EndTime.ToString("F3", ic);
+            expr = $@"if(between(t\,{start}\,{end})\,{selector(ci)}\,{expr})";
         }
 
         return expr;

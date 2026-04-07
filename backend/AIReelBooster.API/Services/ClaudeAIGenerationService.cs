@@ -67,7 +67,13 @@ public class ClaudeAIGenerationService : IAIGenerationService
         var content = new StringContent(json, Encoding.UTF8, "application/json");
 
         var response = await _http.PostAsync(_settings.Endpoint, content, ct);
-        response.EnsureSuccessStatusCode();
+        if (!response.IsSuccessStatusCode)
+        {
+            var errBody = await response.Content.ReadAsStringAsync(ct);
+            _logger.LogError("Claude API error {Status}: {Body}", (int)response.StatusCode, errBody);
+            throw new HttpRequestException(
+                $"Claude returned {(int)response.StatusCode}: {errBody}", null, response.StatusCode);
+        }
 
         var responseJson = await response.Content.ReadAsStringAsync(ct);
         return ParseClaudeResponse(responseJson);
@@ -164,7 +170,13 @@ public class ClaudeAIGenerationService : IAIGenerationService
         var json = JsonSerializer.Serialize(requestBody);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
         var response = await _http.PostAsync(_settings.Endpoint, content, ct);
-        response.EnsureSuccessStatusCode();
+        if (!response.IsSuccessStatusCode)
+        {
+            var errBody = await response.Content.ReadAsStringAsync(ct);
+            _logger.LogError("Claude API error {Status}: {Body}", (int)response.StatusCode, errBody);
+            throw new HttpRequestException(
+                $"Claude returned {(int)response.StatusCode}: {errBody}", null, response.StatusCode);
+        }
 
         var responseJson = await response.Content.ReadAsStringAsync(ct);
         return ParseViralScoreResponse(responseJson);
@@ -202,7 +214,13 @@ public class ClaudeAIGenerationService : IAIGenerationService
         var json     = JsonSerializer.Serialize(requestBody);
         var content  = new StringContent(json, Encoding.UTF8, "application/json");
         var response = await _http.PostAsync(_settings.Endpoint, content, ct);
-        response.EnsureSuccessStatusCode();
+        if (!response.IsSuccessStatusCode)
+        {
+            var errBody = await response.Content.ReadAsStringAsync(ct);
+            _logger.LogError("Claude API error {Status}: {Body}", (int)response.StatusCode, errBody);
+            throw new HttpRequestException(
+                $"Claude returned {(int)response.StatusCode}: {errBody}", null, response.StatusCode);
+        }
 
         var responseJson = await response.Content.ReadAsStringAsync(ct);
 
