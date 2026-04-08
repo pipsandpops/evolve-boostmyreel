@@ -12,6 +12,7 @@ using AIReelBooster.API.Infrastructure;
 using AIReelBooster.API.Middleware;
 using AIReelBooster.API.Services;
 using AIReelBooster.API.Services.Interfaces;
+using AIReelBooster.API.SmartReframe;
 using AIReelBooster.API.Workers;
 using Microsoft.EntityFrameworkCore;
 
@@ -82,6 +83,9 @@ builder.Services.AddScoped<IReelVideoProcessor, ReelVideoProcessor>();
 builder.Services.AddScoped<IAutoReelService, AutoReelService>();
 builder.Services.AddHttpClient<IAutoReframeService, AutoReframeService>();
 builder.Services.AddHostedService<ReelGenerationWorker>();
+
+// ── Smart Reframe Phase 1 (independent feature — OpenCV face detection) ───────
+builder.Services.AddScoped<ISmartReframeService, SmartReframeService>();
 
 // ── Reel Streak Battle ────────────────────────────────────────────────────────
 builder.Services.AddHttpClient<ContentValidationService>(); // Transient with typed HttpClient
