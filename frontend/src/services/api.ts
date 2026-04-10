@@ -302,6 +302,16 @@ export const api = {
     return request<ImageAnalysisResult>(`/image/${jobId}/result`);
   },
 
+  reframeImages(jobId: string, aspectRatio: string): Promise<{
+    jobId: string; aspectRatio: string; imageCount: number; downloadUrls: string[];
+  }> {
+    return request('/image/reframe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jobId, aspectRatio }),
+    });
+  },
+
   // ── AI Agent ──────────────────────────────────────────────────────────────────
 
   agentChat(messages: AgentMessage[], userId?: string): Promise<AgentChatResponse> {

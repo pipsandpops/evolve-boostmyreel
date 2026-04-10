@@ -115,9 +115,10 @@ export function ImageAnalysisPage({ isPaidUser, onBack, onUpgrade }: Props) {
         )}
 
         {/* Complete */}
-        {state === 'complete' && result && (
+        {state === 'complete' && result && jobId && (
           <ImageResultsPanel
             result={result}
+            jobId={jobId}
             isPaidUser={isPaidUser}
             onReset={reset}
             onUpgrade={onUpgrade}

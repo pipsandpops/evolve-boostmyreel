@@ -4,15 +4,17 @@ import { PostScoreCard } from './PostScoreCard';
 import { ImageInsightsPanel } from './ImageInsightsPanel';
 import { ImageCaptionCard } from './ImageCaptionCard';
 import { CarouselBreakdown } from './CarouselBreakdown';
+import { ImageSmartReframe } from './ImageSmartReframe';
 
 interface Props {
   result: ImageAnalysisResult;
+  jobId: string;
   isPaidUser: boolean;
   onReset: () => void;
   onUpgrade?: () => void;
 }
 
-export function ImageResultsPanel({ result, isPaidUser, onReset, onUpgrade }: Props) {
+export function ImageResultsPanel({ result, jobId, isPaidUser, onReset, onUpgrade }: Props) {
   return (
     <div>
       {/* Success banner */}
@@ -89,6 +91,9 @@ export function ImageResultsPanel({ result, isPaidUser, onReset, onUpgrade }: Pr
           />
         </div>
       )}
+
+      {/* Smart Reframe — always shown after analysis */}
+      <ImageSmartReframe jobId={jobId} />
     </div>
   );
 }
