@@ -66,7 +66,7 @@ public class ImageReframeService
 
         for (var i = 0; i < imagePaths.Count; i++)
         {
-            var inputPath  = imagePaths[i];
+            var inputPath  = Path.GetFullPath(imagePaths[i]);
             var outputName = $"reframed_{i:D3}{Path.GetExtension(inputPath).ToLowerInvariant()}";
             var outputPath = Path.Combine(outputDir, outputName);
 

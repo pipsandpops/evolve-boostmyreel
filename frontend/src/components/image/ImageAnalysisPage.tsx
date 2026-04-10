@@ -11,7 +11,7 @@ interface Props {
 }
 
 export function ImageAnalysisPage({ isPaidUser, onBack, onUpgrade }: Props) {
-  const { state, jobStatus, result, error, analyze, reset } = useImageAnalysis();
+  const { state, jobId, jobStatus, result, error, analyze, reset } = useImageAnalysis();
 
   return (
     <div style={{ minHeight: '100vh', background: '#f8fafc' }}>

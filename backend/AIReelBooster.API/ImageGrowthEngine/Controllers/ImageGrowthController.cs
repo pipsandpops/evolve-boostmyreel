@@ -102,7 +102,7 @@ public class ImageGrowthController : ControllerBase
 
         // ── Persist images to temp storage ────────────────────────────────────
         var jobId   = Guid.NewGuid().ToString("N");
-        var jobDir  = Path.Combine(_storage.TempPath, "img", jobId);
+        var jobDir  = Path.GetFullPath(Path.Combine(_storage.TempPath, "img", jobId));
         Directory.CreateDirectory(jobDir);
 
         var savedPaths = new List<string>();
@@ -201,10 +201,10 @@ public class ImageGrowthController : ControllerBase
         if (job.Status != ImageJobStatus.Complete)
             return BadRequest(new { error = $"Job is not complete yet (status: {job.Status})." });
 
-        if (job.ImageFilePaths.Count == 0 || !System.IO.File.Exists(job.ImageFilePaths[0]))
-            return BadRequest(new { error = "Source images are no longer available." });
+        if (job.ImageFilePaths.Count == 0)
+            return BadRequest(new { error = "No images found in this job." });
 
-        var outputDir = Path.Combine(_storage.TempPath, "img", request.JobId, "reframed");
+        var outputDir = Path.GetFullPath(Path.Combine(_storage.TempPath, "img", request.JobId, "reframed"));
 
         try
         {
@@ -239,7 +239,7 @@ public class ImageGrowthController : ControllerBase
         var job = _store.Get(jobId);
         if (job is null) return NotFound(new { error = "Job not found." });
 
-        var reframedDir = Path.Combine(_storage.TempPath, "img", jobId, "reframed");
+        var reframedDir = Path.GetFullPath(Path.Combine(_storage.TempPath, "img", jobId, "reframed"));
 
         if (!Directory.Exists(reframedDir))
             return NotFound(new { error = "No reframed images found. Run POST /api/image/reframe first." });
