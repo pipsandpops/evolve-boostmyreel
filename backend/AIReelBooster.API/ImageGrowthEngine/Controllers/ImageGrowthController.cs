@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using AIReelBooster.API.ImageGrowthEngine.Infrastructure;
 using AIReelBooster.API.ImageGrowthEngine.Models;
+using AIReelBooster.API.ImageGrowthEngine.Services;
 using AIReelBooster.API.Configuration;
 using Microsoft.Extensions.Options;
 
@@ -9,6 +10,14 @@ namespace AIReelBooster.API.ImageGrowthEngine.Controllers;
 // ── Request / response contracts ─────────────────────────────────────────────
 
 public record AnalyzeImageResponse(string JobId, string Status, DateTime SubmittedAt, int ImageCount);
+
+public record ImageReframeRequest(string JobId, string AspectRatio = "4:5");
+
+public record ImageReframeResponse(
+    string   JobId,
+    string   AspectRatio,
+    int      ImageCount,
+    string[] DownloadUrls);
 
 public record ImageJobStatusResponse(
     string JobId,
@@ -36,17 +45,20 @@ public class ImageGrowthController : ControllerBase
 
     private readonly ImageJobStore        _store;
     private readonly ImageProcessingQueue _queue;
+    private readonly ImageReframeService  _reframe;
     private readonly StorageSettings      _storage;
     private readonly ILogger<ImageGrowthController> _logger;
 
     public ImageGrowthController(
         ImageJobStore        store,
         ImageProcessingQueue queue,
+        ImageReframeService  reframe,
         IOptions<AppSettings> opts,
         ILogger<ImageGrowthController> logger)
     {
         _store   = store;
         _queue   = queue;
+        _reframe = reframe;
         _storage = opts.Value.Storage;
         _logger  = logger;
     }
@@ -158,5 +170,92 @@ public class ImageGrowthController : ControllerBase
             return Conflict(new { error = $"Job not complete yet. Current status: {job.Status}." });
 
         return Ok(job.Result);
+    }
+
+    // ── POST /api/image/reframe ───────────────────────────────────────────────
+    //
+    // Accepts a completed image-analysis job ID, runs Smart Reframe (face
+    // detection + aspect-ratio crop) on every image in the job, and returns
+    // download URLs for the reframed outputs.
+    //
+    // Request:  { "jobId": "...", "aspectRatio": "4:5" | "9:16" | "1:1" }
+    // Response: { "jobId": "...", "aspectRatio": "...", "imageCount": N, "downloadUrls": [...] }
+
+    [HttpPost("reframe")]
+    public IActionResult Reframe([FromBody] ImageReframeRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.JobId))
+            return BadRequest(new { error = "jobId is required." });
+
+        if (!ImageReframeService.AspectProfiles.ContainsKey(request.AspectRatio))
+            return BadRequest(new
+            {
+                error     = $"Unsupported aspectRatio '{request.AspectRatio}'.",
+                supported = ImageReframeService.AspectProfiles.Keys,
+            });
+
+        var job = _store.Get(request.JobId);
+        if (job is null)
+            return NotFound(new { error = $"Job '{request.JobId}' not found." });
+
+        if (job.Status != ImageJobStatus.Complete)
+            return BadRequest(new { error = $"Job is not complete yet (status: {job.Status})." });
+
+        if (job.ImageFilePaths.Count == 0 || !System.IO.File.Exists(job.ImageFilePaths[0]))
+            return BadRequest(new { error = "Source images are no longer available." });
+
+        var outputDir = Path.Combine(_storage.TempPath, "img", request.JobId, "reframed");
+
+        try
+        {
+            var outputPaths = _reframe.ReframeImages(job.ImageFilePaths, outputDir, request.AspectRatio);
+
+            var urls = outputPaths
+                .Select((_, i) => $"/api/image/{request.JobId}/reframe/{i}/download")
+                .ToArray();
+
+            _logger.LogInformation(
+                "ImageReframe: job={Job} ratio={Ratio} → {Count} image(s)",
+                request.JobId, request.AspectRatio, outputPaths.Count);
+
+            return Ok(new ImageReframeResponse(
+                JobId:        request.JobId,
+                AspectRatio:  request.AspectRatio,
+                ImageCount:   outputPaths.Count,
+                DownloadUrls: urls));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "ImageReframe: failed for job {Job}", request.JobId);
+            return StatusCode(500, new { error = $"Reframe failed: {ex.Message}" });
+        }
+    }
+
+    // ── GET /api/image/{jobId}/reframe/{index}/download ───────────────────────
+
+    [HttpGet("{jobId}/reframe/{index:int}/download")]
+    public IActionResult DownloadReframed(string jobId, int index)
+    {
+        var job = _store.Get(jobId);
+        if (job is null) return NotFound(new { error = "Job not found." });
+
+        var reframedDir = Path.Combine(_storage.TempPath, "img", jobId, "reframed");
+
+        if (!Directory.Exists(reframedDir))
+            return NotFound(new { error = "No reframed images found. Run POST /api/image/reframe first." });
+
+        var files = Directory.GetFiles(reframedDir, "reframed_*")
+                             .OrderBy(f => f)
+                             .ToArray();
+
+        if (index < 0 || index >= files.Length)
+            return NotFound(new { error = $"Image index {index} out of range (0–{files.Length - 1})." });
+
+        var filePath  = files[index];
+        var ext       = Path.GetExtension(filePath).ToLowerInvariant();
+        var mediaType = ext is ".jpg" or ".jpeg" ? "image/jpeg" : "image/png";
+        var fileName  = $"reframed_{jobId}_{index}{ext}";
+
+        return PhysicalFile(filePath, mediaType, fileName);
     }
 }

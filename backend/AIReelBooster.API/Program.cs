@@ -7,6 +7,7 @@ using AIReelBooster.API.ImageGrowthEngine.Infrastructure;
 using AIReelBooster.API.ImageGrowthEngine.Interfaces;
 using AIReelBooster.API.ImageGrowthEngine.Services;
 using AIReelBooster.API.ImageGrowthEngine.Workers;
+using AIReelBooster.API.ImageGrowthEngine.Controllers;
 using AIReelBooster.API.Controllers;
 using AIReelBooster.API.Infrastructure;
 using AIReelBooster.API.Middleware;
@@ -108,6 +109,7 @@ builder.Services.AddHttpClient<IImageAnalyzerService, ClaudeImageAnalyzerService
 builder.Services.AddHttpClient<ICaptionGeneratorService, ClaudeCaptionGeneratorService>();
 builder.Services.AddHttpClient<ICarouselOptimizer, CarouselOptimizer>();
 builder.Services.AddHostedService<ImageProcessingWorker>();
+builder.Services.AddScoped<ImageReframeService>();
 
 // Increase default multipart size limits
 builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(opts =>
