@@ -174,9 +174,9 @@ public class ImageProcessingWorker : BackgroundService
         }
         finally
         {
-            // Clean up temp files
-            foreach (var path in job.ImageFilePaths)
-                TryDelete(path);
+            // NOTE: source images are intentionally kept so that Smart Reframe can
+            // run after analysis completes. The JobCleanupWorker removes the whole
+            // job directory when the job expires (60 min TTL).
         }
     }
 
@@ -185,11 +185,5 @@ public class ImageProcessingWorker : BackgroundService
         job.Status          = status;
         job.ProgressPercent = progress;
         if (message != null) job.ErrorMessage = message;
-    }
-
-    private void TryDelete(string path)
-    {
-        try { File.Delete(path); }
-        catch (Exception ex) { _logger.LogWarning(ex, "Could not delete temp file {Path}", path); }
     }
 }
