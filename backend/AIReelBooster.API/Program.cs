@@ -84,8 +84,11 @@ builder.Services.AddScoped<IAutoReelService, AutoReelService>();
 builder.Services.AddHttpClient<IAutoReframeService, AutoReframeService>();
 builder.Services.AddHostedService<ReelGenerationWorker>();
 
-// ── Smart Reframe Phase 1 (independent feature — OpenCV face detection) ───────
-builder.Services.AddScoped<ISmartReframeService, SmartReframeService>();
+// ── Smart Reframe ─────────────────────────────────────────────────────────────
+// Phase 1 (default): static median-crop via OpenCV Haar Cascade
+// Phase 2 (opt-in via Features.EnableDynamicReframe): per-frame tracking + sendcmd crop
+builder.Services.AddScoped<ISmartReframeService,  SmartReframeService>();
+builder.Services.AddScoped<IDynamicReframeService, DynamicReframeService>();
 
 // ── Reel Streak Battle ────────────────────────────────────────────────────────
 builder.Services.AddHttpClient<ContentValidationService>(); // Transient with typed HttpClient

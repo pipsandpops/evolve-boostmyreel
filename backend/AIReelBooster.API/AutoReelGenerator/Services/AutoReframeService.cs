@@ -38,9 +38,6 @@ public class AutoReframeService : IAutoReframeService
     // Max frames to analyse per clip (caps API cost on very long segments).
     private const int MaxFrames = 15;
 
-    // Exponential smoothing weight for NEW position (lower = smoother but slower).
-    private const double SmoothAlpha = 0.2;
-
     public AutoReframeService(
         HttpClient                    http,
         IOptions<AppSettings>         opts,
@@ -105,18 +102,17 @@ public class AutoReframeService : IAutoReframeService
                 frameFiles.Count, clipStart, clipEnd);
 
             // ── 3. Analyse frames with Claude Vision ──────────────────────────
-            var instructions = new List<CropInstruction>();
-            double smoothX   = inputWidth / 2.0 - cropWidth / 2.0;  // start centred
+            // Collect all subject x readings, then take the median to produce
+            // ONE stable crop for the entire clip.  Per-frame crops cause the
+            // if(between(t,...)) expression to contain commas that FFmpeg's
+            // filtergraph parser splits on, breaking the filter chain.
+            var xReadings = new List<double>();
 
             for (var i = 0; i < frameFiles.Count; i++)
             {
                 ct.ThrowIfCancellationRequested();
 
-                var frameTime = i * (clipDuration / frameFiles.Count);      // clip-relative seconds
-                var nextTime  = (i + 1) * (clipDuration / frameFiles.Count);
-
                 double subjectCenterX = 0.5;  // fallback = centre
-
                 try
                 {
                     subjectCenterX = await AnalyzeFrameAsync(frameFiles[i], ct);
@@ -126,33 +122,32 @@ public class AutoReframeService : IAutoReframeService
                     _logger.LogWarning(ex, "SmartReframe: frame {I} analysis failed — using centre", i);
                 }
 
-                // Convert normalised centre to pixel crop-left
-                var rawX = subjectCenterX * inputWidth - cropWidth / 2.0;
+                var rawX    = subjectCenterX * inputWidth - cropWidth / 2.0;
+                var clampX  = Math.Max(0, Math.Min(rawX, inputWidth - cropWidth));
+                xReadings.Add(clampX);
 
-                // Clamp so crop window stays within frame
-                var clampedX = Math.Max(0, Math.Min(rawX, inputWidth - cropWidth));
+                _logger.LogDebug("SmartReframe: frame {I} subjectX={SX:F2} cropX={CX:F0}", i, subjectCenterX, clampX);
+            }
 
-                // Apply exponential smoothing to reduce jitter
-                smoothX = smoothX * (1 - SmoothAlpha) + clampedX * SmoothAlpha;
-                var finalX = (int)Math.Round(Math.Max(0, Math.Min(smoothX, inputWidth - cropWidth)));
+            // Median crop-X — robust against outlier frames
+            xReadings.Sort();
+            var medianX = xReadings[xReadings.Count / 2];
+            var finalCropX = (int)Math.Round(Math.Max(0, Math.Min(medianX, inputWidth - cropWidth)));
 
-                instructions.Add(new CropInstruction
+            _logger.LogInformation("SmartReframe: stable cropX={X} (median of {N} readings)", finalCropX, xReadings.Count);
+
+            return
+            [
+                new CropInstruction
                 {
-                    StartTime = frameTime,
-                    EndTime   = nextTime,
-                    X         = finalX,
+                    StartTime = 0,
+                    EndTime   = clipDuration,
+                    X         = finalCropX,
                     Y         = 0,
                     Width     = cropWidth,
                     Height    = cropHeight,
-                });
-
-                _logger.LogDebug(
-                    "SmartReframe: t={T:F1}s subjectX={SX:F2} cropX={CX}",
-                    frameTime, subjectCenterX, finalX);
-            }
-
-            _logger.LogInformation("SmartReframe: generated {Count} crop instructions", instructions.Count);
-            return instructions;
+                },
+            ];
         }
         finally
         {

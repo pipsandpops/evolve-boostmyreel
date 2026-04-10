@@ -12,6 +12,17 @@ public class AppSettings
     public InstagramSettings     Instagram            { get; set; } = new();
     public AutoReelSettings      AutoReel             { get; set; } = new();
     public ReelPlanLimits        ReelPlanLimits       { get; set; } = new();
+    public FeatureFlags          Features             { get; set; } = new();
+}
+
+public class FeatureFlags
+{
+    /// <summary>
+    /// When true, POST /api/video/smart-reframe uses DynamicReframeService
+    /// (per-frame OpenCV face tracking + moving-average smoothing + sendcmd crop).
+    /// When false (default), the existing SmartReframeService is used unchanged.
+    /// </summary>
+    public bool EnableDynamicReframe { get; set; } = false;
 }
 
 // ── Auto Reel Generator ───────────────────────────────────────────────────────

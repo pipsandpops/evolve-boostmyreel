@@ -8,28 +8,37 @@ namespace AIReelBooster.API.SmartReframe;
 /// <summary>
 /// POST /api/video/smart-reframe
 ///
-/// Accepts a completed video-analysis job ID, runs Smart Reframe Phase 1
-/// (OpenCV Haar Cascade face detection + FFmpeg 9:16 crop), and returns
-/// a download URL for the reframed video.
+/// Accepts a completed video-analysis job ID and runs Smart Reframe.
+///
+/// Routing (config-driven, no API change):
+///   Features.EnableDynamicReframe = false (default)
+///     → SmartReframeService  (Phase 1 — static median crop)
+///   Features.EnableDynamicReframe = true
+///     → DynamicReframeService (v2 — per-frame tracking + sendcmd crop)
 /// </summary>
 [ApiController]
 [Route("api/video")]
 public class SmartReframeController : ControllerBase
 {
-    private readonly ISmartReframeService _reframeService;
-    private readonly JobStore             _jobStore;
-    private readonly StorageSettings      _storage;
+    private readonly ISmartReframeService  _staticService;
+    private readonly IDynamicReframeService _dynamicService;
+    private readonly JobStore              _jobStore;
+    private readonly StorageSettings       _storage;
+    private readonly FeatureFlags          _features;
     private readonly ILogger<SmartReframeController> _logger;
 
     public SmartReframeController(
-        ISmartReframeService             reframeService,
+        ISmartReframeService             staticService,
+        IDynamicReframeService           dynamicService,
         JobStore                         jobStore,
         IOptions<AppSettings>            opts,
         ILogger<SmartReframeController>  logger)
     {
-        _reframeService = reframeService;
+        _staticService  = staticService;
+        _dynamicService = dynamicService;
         _jobStore       = jobStore;
         _storage        = opts.Value.Storage;
+        _features       = opts.Value.Features;
         _logger         = logger;
     }
 
@@ -37,6 +46,7 @@ public class SmartReframeController : ControllerBase
     //
     // Request:  { "jobId": "<completed video job id>" }
     // Response: { "reframeJobId": "...", "status": "processed", "outputUrl": "..." }
+    //           (unchanged — no API contract change)
 
     [HttpPost("smart-reframe")]
     public async Task<IActionResult> SmartReframe(
@@ -56,37 +66,54 @@ public class SmartReframeController : ControllerBase
         if (string.IsNullOrEmpty(videoJob.OriginalFilePath) || !System.IO.File.Exists(videoJob.OriginalFilePath))
             return BadRequest(new { error = "Source video file is no longer available." });
 
-        // Output path: same job temp directory, suffixed _reframed.mp4
         var jobDir     = Path.GetFullPath(Path.Combine(_storage.TempPath, request.JobId));
         Directory.CreateDirectory(jobDir);
         var outputPath = Path.Combine(jobDir, "reframed.mp4");
         var reframeId  = Guid.NewGuid().ToString("N")[..12];
 
+        var mode = _features.EnableDynamicReframe ? "dynamic-v2" : "static-v1";
         _logger.LogInformation(
-            "SmartReframe: job={Job} reframeId={RId} input={In} output={Out}",
-            request.JobId, reframeId, videoJob.OriginalFilePath, outputPath);
+            "SmartReframe: job={Job} reframeId={RId} mode={Mode} input={In}",
+            request.JobId, reframeId, mode, videoJob.OriginalFilePath);
 
         try
         {
-            var result = await _reframeService.ReframeAsync(
-                videoJob.OriginalFilePath,
-                outputPath,
-                ct);
+            bool   faceDetected;
+            int    framesWithFace, framesAnalysed, cropX;
+
+            if (_features.EnableDynamicReframe)
+            {
+                var result = await _dynamicService.ReframeAsync(
+                    videoJob.OriginalFilePath, outputPath, ct);
+
+                faceDetected   = result.FaceDetected;
+                framesWithFace = result.FramesWithFace;
+                framesAnalysed = result.FramesAnalysed;
+                cropX          = result.CropX;
+            }
+            else
+            {
+                var result = await _staticService.ReframeAsync(
+                    videoJob.OriginalFilePath, outputPath, ct);
+
+                faceDetected   = result.FaceDetected;
+                framesWithFace = result.FramesWithFace;
+                framesAnalysed = result.FramesAnalysed;
+                cropX          = result.CropX;
+            }
 
             _logger.LogInformation(
-                "SmartReframe: done — faceDetected={F} framesWithFace={FW}/{FA} cropX={X}",
-                result.FaceDetected, result.FramesWithFace, result.FramesAnalysed, result.CropX);
-
-            var outputUrl = $"/api/video/smart-reframe/{request.JobId}/download";
+                "SmartReframe: done mode={Mode} faceDetected={F} frames={FW}/{FA} cropX={X}",
+                mode, faceDetected, framesWithFace, framesAnalysed, cropX);
 
             return Ok(new SmartReframeResponse(
                 ReframeJobId: reframeId,
                 Status:       "processed",
-                OutputUrl:    outputUrl));
+                OutputUrl:    $"/api/video/smart-reframe/{request.JobId}/download"));
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "SmartReframe: failed for job {Job}", request.JobId);
+            _logger.LogError(ex, "SmartReframe: failed for job {Job} mode={Mode}", request.JobId, mode);
             return StatusCode(500, new { error = $"Reframe failed: {ex.Message}" });
         }
     }
