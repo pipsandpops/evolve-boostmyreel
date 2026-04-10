@@ -113,33 +113,6 @@ public class ReelVideoProcessor : IReelVideoProcessor
             ? $"{cropFilter},zoompan=z='min(zoom+0.0008,1.08)':d=1:fps=30:s={w}x{h}"
             : cropFilter;
 
-        // Step 3 — optional subtitle burn-in
-        string? tempSrt = null;
-        if (subtitles is { Count: > 0 })
-        {
-            tempSrt = await WriteTempSrtAsync(outputDir, subtitles, clipStartOffset, ct);
-
-            // On Windows the path needs forward-slashes and escaped colons.
-            // On Linux the path has no colons so the replace is a no-op.
-            // Commas inside force_style must be escaped as \, so FFmpeg's
-            // filter-chain parser does not split on them.
-            var escapedSrt = tempSrt
-                .Replace("\\", "/")
-                .Replace(":", "\\:");
-
-            videoFilter += $",subtitles='{escapedSrt}'"
-                         + ":force_style="
-                         + "FontName=Arial\\,"
-                         + "FontSize=18\\,"
-                         + "PrimaryColour=&H00FFFFFF\\,"
-                         + "OutlineColour=&H00000000\\,"
-                         + "Outline=2\\,"
-                         + "Alignment=2";
-        }
-
-        // Use ArgumentList so each value is passed verbatim to FFmpeg with no
-        // shell-level quoting. This avoids .NET's Arguments parser mishandling
-        // the single-quoted SRT path on Linux.
         var args = new[]
         {
             "-y",
@@ -153,15 +126,7 @@ public class ReelVideoProcessor : IReelVideoProcessor
         };
 
         _logger.LogDebug("ConvertToVertical: {Args}", string.Join(" ", args));
-
-        try
-        {
-            await RunAndCheckAsync(ffmpegExe, args, ct);
-        }
-        finally
-        {
-            if (tempSrt != null) TryDelete(tempSrt);
-        }
+        await RunAndCheckAsync(ffmpegExe, args, ct);
 
         return outputPath;
     }
