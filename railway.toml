@@ -1,0 +1,6 @@
+[build]
+builder = "dockerfile"
+dockerfilePath = "backend/AIReelBooster.API/Dockerfile"
+
+[deploy]
+restartPolicyType = "on_failure"
