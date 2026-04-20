@@ -22,9 +22,10 @@ import { BattlePage } from './components/BattlePage';
 import BrandAnalyticsDashboard from './components/BrandAnalyticsDashboard';
 import BrandDashboard from './components/BrandDashboard';
 import CampaignPage from './components/CampaignPage';
-import { Sparkles, RotateCcw, Zap, FileText, Hash, Captions, Menu, X, ImagePlus, Clapperboard, BookOpen, Crown, Gift } from 'lucide-react';
+import { Sparkles, RotateCcw, Zap, FileText, Hash, Captions, Menu, X, ImagePlus, Clapperboard, BookOpen, Crown, Gift, TrendingUp } from 'lucide-react';
+import { TrendingHashtagsWidget } from './components/TrendingHashtagsWidget';
 
-type Page = 'home' | 'payment' | 'contact' | 'image-analysis' | 'auto-reel' | 'blog' | 'blog-why-best' | 'battle' | 'brand-analytics' | 'brand-dashboard' | 'campaign';
+type Page = 'home' | 'payment' | 'contact' | 'image-analysis' | 'auto-reel' | 'blog' | 'blog-why-best' | 'battle' | 'brand-analytics' | 'brand-dashboard' | 'campaign' | 'trending';
 
 function App() {
   // Secret admin page — only accessible via ?admin in the URL
@@ -43,7 +44,7 @@ function App() {
 
   const [page, setPage] = useState<Page>(() => {
     const p = new URLSearchParams(window.location.search).get('page');
-    const validPages: Page[] = ['blog', 'blog-why-best', 'contact', 'image-analysis', 'auto-reel', 'payment', 'battle', 'brand-analytics', 'brand-dashboard', 'campaign'];
+    const validPages: Page[] = ['blog', 'blog-why-best', 'contact', 'image-analysis', 'auto-reel', 'payment', 'battle', 'brand-analytics', 'brand-dashboard', 'campaign', 'trending'];
     if (window.location.pathname.startsWith('/battle/')) return 'battle';
     if (window.location.pathname.startsWith('/campaign/')) return 'campaign';
     return validPages.includes(p as Page) ? (p as Page) : 'home';
@@ -112,6 +113,53 @@ function App() {
     setSelectedPlan(null);
     setTimeout(() => scrollTo('pricing'), 100);
   };
+
+  // ── Trending Hashtags page ────────────────────────────────────────
+  if (page === 'trending') {
+    return (
+      <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
+        {/* Top bar */}
+        <div style={{
+          background: 'white', borderBottom: '1px solid #e2e8f0',
+          padding: '0 24px', height: 60, display: 'flex', alignItems: 'center', gap: 14,
+          position: 'sticky', top: 0, zIndex: 10,
+        }}>
+          <button onClick={() => { setPage('home'); window.scrollTo(0, 0); }} className="btn-secondary" style={{ padding: '7px 14px', fontSize: 13 }}>
+            ← Back
+          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{
+              width: 28, height: 28, borderRadius: 8, flexShrink: 0,
+              background: 'linear-gradient(135deg, #7c3aed, #a855f7)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <TrendingUp size={14} color="white" />
+            </div>
+            <span style={{ fontSize: 15, fontWeight: 700, color: '#0f172a' }}>Trending Hashtags</span>
+          </div>
+          <span style={{ fontSize: 13, color: '#94a3b8', marginLeft: 4 }}>— AI-curated for Reels & Shorts</span>
+        </div>
+
+        <div style={{ maxWidth: 680, margin: '0 auto', padding: '36px 24px' }}>
+          <div style={{ textAlign: 'center', marginBottom: 28 }}>
+            <h1 style={{
+              fontSize: 'clamp(22px, 4vw, 34px)', fontWeight: 800, color: '#0f172a',
+              margin: '0 0 10px', letterSpacing: -0.5,
+            }}>
+              What's trending{' '}
+              <span style={{ background: 'linear-gradient(135deg, #7c3aed, #a855f7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                today
+              </span>
+            </h1>
+            <p style={{ fontSize: 14, color: '#64748b', margin: 0, maxWidth: 460, marginInline: 'auto' }}>
+              AI-analysed top 5 hashtags for Indian creators on Instagram Reels and YouTube Shorts. Updated every 6 hours.
+            </p>
+          </div>
+          <TrendingHashtagsWidget />
+        </div>
+      </div>
+    );
+  }
 
   // ── Blog page ──────────────────────────────────────────────────────
   if (page === 'blog') {
@@ -334,6 +382,9 @@ function App() {
             <button onClick={() => { setPage('auto-reel'); window.scrollTo(0, 0); }} className="nav-tool-btn" style={{ color: '#db2777' }}>
               <Clapperboard size={14} /> Reels
             </button>
+            <button onClick={() => { setPage('trending'); window.scrollTo(0, 0); }} className="nav-tool-btn" style={{ color: '#0369a1' }}>
+              <TrendingUp size={14} /> Trending
+            </button>
             <button onClick={() => { setPage('battle'); window.scrollTo(0, 0); }} className="nav-tool-btn" style={{ color: '#f59e0b' }}>
               ⚔️ Battle
             </button>
@@ -440,6 +491,13 @@ function App() {
               padding: '10px 0', fontSize: 15, fontWeight: 600, color: '#db2777',
             }}>
               <Clapperboard size={15} /> Auto Reel Generator
+            </button>
+            <button onClick={() => { setMobileMenuOpen(false); setPage('trending'); window.scrollTo(0, 0); }} style={{
+              display: 'flex', alignItems: 'center', gap: 8, width: '100%', textAlign: 'left',
+              background: 'none', border: 'none', cursor: 'pointer',
+              padding: '10px 0', fontSize: 15, fontWeight: 600, color: '#0369a1',
+            }}>
+              <TrendingUp size={15} /> Trending Hashtags
             </button>
             <button onClick={() => { setMobileMenuOpen(false); setPage('battle'); window.scrollTo(0, 0); }} style={{
               display: 'flex', alignItems: 'center', gap: 8, width: '100%', textAlign: 'left',

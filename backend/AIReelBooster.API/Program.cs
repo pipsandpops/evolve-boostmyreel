@@ -111,6 +111,9 @@ builder.Services.AddHttpClient<ICarouselOptimizer, CarouselOptimizer>();
 builder.Services.AddHostedService<ImageProcessingWorker>();
 builder.Services.AddScoped<ImageReframeService>();
 
+// ── Trending Hashtags ─────────────────────────────────────────────────────────
+builder.Services.AddHttpClient<AIReelBooster.API.TrendingHashtags.ClaudeTrendingService>();
+
 // Increase default multipart size limits
 builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(opts =>
 {

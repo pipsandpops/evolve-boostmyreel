@@ -2,6 +2,7 @@ import type {
   AgentChatResponse,
   AgentMessage,
   AnalysisResult,
+  TrendingHashtagsResponse,
   AwardReferralResponse,
   BoosterRow,
   BrandRoiAnalytics,
@@ -310,6 +311,12 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ jobId, aspectRatio }),
     });
+  },
+
+  // ── Trending Hashtags ─────────────────────────────────────────────────────────
+
+  getTrendingHashtags(): Promise<TrendingHashtagsResponse> {
+    return request<TrendingHashtagsResponse>('/trending/hashtags');
   },
 
   // ── AI Agent ──────────────────────────────────────────────────────────────────
