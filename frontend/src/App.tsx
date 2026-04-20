@@ -376,17 +376,11 @@ function App() {
                 {l.label}
               </button>
             ))}
-            <button onClick={() => { setPage('image-analysis'); window.scrollTo(0, 0); }} className="nav-tool-btn" style={{ color: '#7c3aed' }}>
-              <ImagePlus size={14} /> Images
-            </button>
             <button onClick={() => { setPage('auto-reel'); window.scrollTo(0, 0); }} className="nav-tool-btn" style={{ color: '#db2777' }}>
               <Clapperboard size={14} /> Reels
             </button>
             <button onClick={() => { setPage('trending'); window.scrollTo(0, 0); }} className="nav-tool-btn" style={{ color: '#0369a1' }}>
               <TrendingUp size={14} /> Trending
-            </button>
-            <button onClick={() => { setPage('battle'); window.scrollTo(0, 0); }} className="nav-tool-btn" style={{ color: '#f59e0b' }}>
-              ⚔️ Battle
             </button>
             <button onClick={() => { setPage('brand-dashboard'); window.scrollTo(0, 0); }} className="nav-tool-btn" style={{ color: '#a78bfa' }}>
               <Crown size={14} /> Brands
