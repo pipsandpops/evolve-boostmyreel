@@ -1,3 +1,20 @@
+// ── Trending Hashtags ─────────────────────────────────────────────────────────
+
+export interface TrendingHashtag {
+  tag:            string;
+  description:    string;
+  idea:           string;
+  virality_score: number;
+  category:       string;
+}
+
+export interface TrendingHashtagsResponse {
+  date:     string;
+  hashtags: TrendingHashtag[];
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export type JobStatus =
   | 'Pending'
   | 'Uploading'
