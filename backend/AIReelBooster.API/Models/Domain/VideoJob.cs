@@ -20,12 +20,17 @@ public class VideoJob
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? CompletedAt { get; set; }
 
+    // URL source (set when job is created from a URL rather than a file upload)
+    public string? SourceUrl      { get; set; }
+    public string? SourcePlatform { get; set; }
+
     // File paths
     public string? OriginalFilePath { get; set; }
     public string? AudioFilePath { get; set; }
     public string? SrtFilePath { get; set; }
     public string? ThumbnailFilePath { get; set; }
     public string? BurnedVideoFilePath { get; set; }
+    public string? CinematicVideoFilePath { get; set; }
 
     // Video metadata
     public double? DurationSeconds { get; set; }

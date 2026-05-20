@@ -219,6 +219,82 @@ public class ClaudeAIGenerationService : IAIGenerationService
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
     }
 
+    public async Task<RoastResult> GenerateRoastAsync(
+        string hook, string caption, List<string> hashtags, int viralScore,
+        string transcript, CancellationToken ct = default)
+    {
+        _logger.LogInformation("Generating AI roast with Claude");
+
+        var hashtagList = string.Join(", ", hashtags.Take(10).Select(h => $"#{h}"));
+        var transcriptExcerpt = transcript.Length > 1500 ? transcript[..1500] : transcript;
+
+        var prompt = $$"""
+            You are a hilariously savage but secretly helpful Gen-Z content coach.
+            Your job: brutally roast this creator's reel content, then immediately redeem them with a fire glow-up plan.
+
+            THE CONTENT:
+            Hook: {{hook}}
+            Caption: {{caption}}
+            Hashtags: {{hashtagList}}
+            Viral Score: {{viralScore}}/100
+            Transcript excerpt: {{transcriptExcerpt}}
+
+            ROAST RULES:
+            - Write the roast in authentic Gen-Z voice: use "bestie", "no cap", "it's giving", "lowkey", "not me", "the audacity", "rent free", "mid", "slay but...", "we love the vision BUT", "💀", "😭", "🫡" etc.
+            - Be genuinely funny and savage about specific flaws (slow hook, boring caption, basic hashtags, mid energy)
+            - 3-4 sentences max, punchy and quotable — the creator should want to screenshot it
+            - Do NOT be mean about the person, only about the content strategy
+            - End the roast with one backhanded compliment
+
+            GLOW-UP RULES:
+            - Exactly 3 specific, actionable fixes
+            - Each fix is one clear sentence, no fluff
+            - Reference the actual content (not generic advice)
+            - Start each with an action verb
+
+            Return ONLY valid JSON (no markdown, no explanation):
+            {
+              "roast": "the full roast paragraph",
+              "glowUp": ["fix 1", "fix 2", "fix 3"]
+            }
+            """;
+
+        var requestBody = new
+        {
+            model      = _settings.Model,
+            max_tokens = 512,
+            messages   = new[] { new { role = "user", content = prompt } }
+        };
+
+        var json     = JsonSerializer.Serialize(requestBody);
+        var content  = new StringContent(json, Encoding.UTF8, "application/json");
+        var response = await _http.PostAsync(_settings.Endpoint, content, ct);
+        response.EnsureSuccessStatusCode();
+
+        var responseJson = await response.Content.ReadAsStringAsync(ct);
+        return ParseRoastResponse(responseJson);
+    }
+
+    private static RoastResult ParseRoastResponse(string responseJson)
+    {
+        var doc  = JsonDocument.Parse(responseJson);
+        var text = doc.RootElement.GetProperty("content")[0].GetProperty("text").GetString() ?? "{}";
+
+        text = text.Trim();
+        if (text.StartsWith("```")) text = text.Split('\n', 2)[1];
+        if (text.EndsWith("```")) text = text[..text.LastIndexOf("```")];
+        text = text.Trim();
+
+        var r      = JsonDocument.Parse(text).RootElement;
+        var roast  = r.GetProperty("roast").GetString() ?? "bestie the silence speaks 💀";
+        var glowUp = r.GetProperty("glowUp").EnumerateArray()
+                      .Select(x => x.GetString() ?? "")
+                      .Where(x => !string.IsNullOrWhiteSpace(x))
+                      .ToList();
+
+        return new RoastResult { Roast = roast, GlowUp = glowUp };
+    }
+
     private static ViralScoreResult ParseViralScoreResponse(string responseJson)
     {
         var doc = JsonDocument.Parse(responseJson);

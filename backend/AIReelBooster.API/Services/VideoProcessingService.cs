@@ -152,6 +152,50 @@ public class VideoProcessingService : IVideoProcessingService
         return outputPath;
     }
 
+    public async Task<string> GenerateCinematicVideoAsync(
+        string videoPath, string outputDir, double durationSeconds, CancellationToken ct = default)
+    {
+        await EnsureFFmpegAsync(ct);
+        _logger.LogInformation("Generating cinematic video from: {VideoPath}", videoPath);
+
+        var outputPath = Path.Combine(outputDir, "cinematic.mp4");
+        var ffmpegBin  = OperatingSystem.IsWindows() ? "ffmpeg.exe" : "ffmpeg";
+        var ffmpegExe  = Path.Combine(FFmpeg.ExecutablesPath ?? "./ffmpeg-bin", ffmpegBin);
+
+        // 1. Scale up 15% to create zoom/pan headroom
+        // 2. Slowly sweep the crop window left→right using a cosine ramp over the video's duration
+        // 3. Cinematic colour grade: mild saturation + contrast lift, slight darken
+        // 4. Vignette for depth
+        var dur    = Math.Max(durationSeconds, 1.0).ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+        var filter = $"scale=trunc(iw*1.15/2)*2:trunc(ih*1.15/2)*2," +
+                     $"crop=iw/1.15:ih/1.15:" +
+                     $"(iw-iw/1.15)*0.5*(1-cos(2*PI*t/{dur})):" +
+                     $"(ih-ih/1.15)*0.5," +
+                     $"eq=saturation=1.2:contrast=1.05:brightness=-0.02," +
+                     $"vignette=PI/4";
+
+        var args = $"-y -i \"{videoPath}\" -vf \"{filter}\" -c:a copy -movflags +faststart \"{outputPath}\"";
+
+        using var process = new System.Diagnostics.Process();
+        process.StartInfo = new System.Diagnostics.ProcessStartInfo
+        {
+            FileName               = ffmpegExe,
+            Arguments              = args,
+            RedirectStandardError  = true,
+            UseShellExecute        = false,
+            CreateNoWindow         = true
+        };
+        process.Start();
+        var stderr = await process.StandardError.ReadToEndAsync(ct);
+        await process.WaitForExitAsync(ct);
+
+        if (process.ExitCode != 0)
+            throw new InvalidOperationException(
+                $"FFmpeg cinematic failed (exit {process.ExitCode}): {stderr[..Math.Min(600, stderr.Length)]}");
+
+        return outputPath;
+    }
+
     public async Task<string> BurnSubtitlesAsync(
         string videoPath, string srtPath, string outputDir, CancellationToken ct = default)
     {

@@ -3,13 +3,17 @@ import { Copy, Check, Zap } from 'lucide-react';
 
 interface HookCardProps {
   hook: string;
+  isPaidUser?: boolean;
 }
 
-export function HookCard({ hook }: HookCardProps) {
+const WATERMARK = '\n\n— via BoostMyReel (boostmyreel.com)';
+
+export function HookCard({ hook, isPaidUser = false }: HookCardProps) {
   const [copied, setCopied] = useState(false);
 
   const copy = async () => {
-    await navigator.clipboard.writeText(hook);
+    const text = isPaidUser ? hook : hook + WATERMARK;
+    await navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

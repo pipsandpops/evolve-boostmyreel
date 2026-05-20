@@ -2,6 +2,9 @@ using AIReelBooster.API.Models.Domain;
 
 namespace AIReelBooster.API.Models.Responses;
 
+public record CinematicVideoResponse(string JobId, string VideoUrl);
+public record RoastResponse(string Roast, List<string> GlowUp);
+
 public record UploadVideoResponse(
     string JobId,
     string Status,

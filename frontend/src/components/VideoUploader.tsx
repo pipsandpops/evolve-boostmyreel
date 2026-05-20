@@ -9,6 +9,7 @@ const ACCEPTED_TYPES = {
   'video/*': ['.mp4', '.mov', '.webm', '.avi', '.mkv'],
 };
 const MAX_SIZE = 500 * 1024 * 1024;
+const FREE_PLAN_MAX_BYTES = 35 * 1024 * 1024; // 35 MB
 
 const MOBILE_WARN_BYTES = 100 * 1024 * 1024; // 100 MB
 
@@ -16,9 +17,10 @@ interface VideoUploaderProps {
   onUpload: (file: File) => void;
   isUploading: boolean;
   uploadPercent?: number;
+  isPaidUser?: boolean;
 }
 
-export function VideoUploader({ onUpload, isUploading, uploadPercent = 0 }: VideoUploaderProps) {
+export function VideoUploader({ onUpload, isUploading, uploadPercent = 0, isPaidUser = false }: VideoUploaderProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [dropError, setDropError] = useState<string | null>(null);
 
@@ -29,8 +31,16 @@ export function VideoUploader({ onUpload, isUploading, uploadPercent = 0 }: Vide
       setDropError(msg.includes('too large') ? 'File is too large. Max 500 MB.' : msg);
       return;
     }
-    if (accepted[0]) setSelectedFile(accepted[0]);
-  }, []);
+    if (accepted[0]) {
+      if (!isPaidUser && accepted[0].size > FREE_PLAN_MAX_BYTES) {
+        setDropError(
+          `Free plan limit is 35 MB. Your video is ${(accepted[0].size / 1024 / 1024).toFixed(1)} MB. Upgrade to PRO to upload up to 500 MB.`
+        );
+        return;
+      }
+      setSelectedFile(accepted[0]);
+    }
+  }, [isPaidUser]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -133,7 +143,7 @@ export function VideoUploader({ onUpload, isUploading, uploadPercent = 0 }: Vide
                   </span>
                 </p>
                 <p style={{ color: '#94a3b8', fontSize: 12, margin: 0 }}>
-                  MP4, MOV, WebM, AVI, MKV &nbsp;·&nbsp; Max 500 MB
+                  MP4, MOV, WebM, AVI, MKV &nbsp;·&nbsp; Max {isPaidUser ? '500 MB' : '35 MB (free plan)'}
                 </p>
               </>
             )}

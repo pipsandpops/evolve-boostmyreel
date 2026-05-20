@@ -57,6 +57,7 @@ builder.Services.AddSingleton<DailyUsageLimiter>();
 // Scoped services
 builder.Services.AddScoped<IVideoStorageService, VideoStorageService>();
 builder.Services.AddScoped<IVideoProcessingService, VideoProcessingService>();
+builder.Services.AddScoped<IUrlDownloadService, YtDlpDownloadService>();
 
 // HTTP clients for external APIs
 builder.Services.AddHttpClient<ITranscriptionService, WhisperTranscriptionService>();
