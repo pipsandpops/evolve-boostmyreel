@@ -22,10 +22,12 @@ import { BattlePage } from './components/BattlePage';
 import BrandAnalyticsDashboard from './components/BrandAnalyticsDashboard';
 import BrandDashboard from './components/BrandDashboard';
 import CampaignPage from './components/CampaignPage';
-import { Sparkles, RotateCcw, Zap, FileText, Hash, Captions, Menu, X, ImagePlus, Clapperboard, BookOpen, Crown, Gift, TrendingUp } from 'lucide-react';
+import { Sparkles, RotateCcw, Zap, FileText, Hash, Captions, Menu, X, ImagePlus, Clapperboard, BookOpen, Crown, Gift, TrendingUp, Link2 } from 'lucide-react';
 import { TrendingHashtagsWidget } from './components/TrendingHashtagsWidget';
+import { UrlAnalysisPage } from './components/UrlAnalysisPage';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
-type Page = 'home' | 'payment' | 'contact' | 'image-analysis' | 'auto-reel' | 'blog' | 'blog-why-best' | 'battle' | 'brand-analytics' | 'brand-dashboard' | 'campaign' | 'trending';
+type Page = 'home' | 'payment' | 'contact' | 'image-analysis' | 'auto-reel' | 'blog' | 'blog-why-best' | 'battle' | 'brand-analytics' | 'brand-dashboard' | 'campaign' | 'trending' | 'url-analysis';
 
 function App() {
   // Secret admin page — only accessible via ?admin in the URL
@@ -44,7 +46,7 @@ function App() {
 
   const [page, setPage] = useState<Page>(() => {
     const p = new URLSearchParams(window.location.search).get('page');
-    const validPages: Page[] = ['blog', 'blog-why-best', 'contact', 'image-analysis', 'auto-reel', 'payment', 'battle', 'brand-analytics', 'brand-dashboard', 'campaign', 'trending'];
+    const validPages: Page[] = ['blog', 'blog-why-best', 'contact', 'image-analysis', 'auto-reel', 'payment', 'battle', 'brand-analytics', 'brand-dashboard', 'campaign', 'trending', 'url-analysis'];
     if (window.location.pathname.startsWith('/battle/')) return 'battle';
     if (window.location.pathname.startsWith('/campaign/')) return 'campaign';
     return validPages.includes(p as Page) ? (p as Page) : 'home';
@@ -188,14 +190,30 @@ function App() {
     return <ContactPage onBack={() => { setPage('home'); window.scrollTo(0, 0); }} />;
   }
 
+  // ── URL Reel Analysis page ────────────────────────────────────────
+  if (page === 'url-analysis') {
+    return (
+      <ErrorBoundary>
+        <UrlAnalysisPage
+          userId={userId}
+          isPaidUser={isPaidUser}
+          onBack={() => { setPage('home'); window.scrollTo(0, 0); }}
+          onUpgrade={() => { setPage('payment'); setSelectedPlan(null); setTimeout(() => scrollTo('pricing'), 100); }}
+        />
+      </ErrorBoundary>
+    );
+  }
+
   // ── Image Analysis page ────────────────────────────────────────────
   if (page === 'image-analysis') {
     return (
-      <ImageAnalysisPage
-        isPaidUser={isPaidUser}
-        onBack={() => { setPage('home'); window.scrollTo(0, 0); }}
-        onUpgrade={() => { setPage('payment'); setSelectedPlan(null); setTimeout(() => scrollTo('pricing'), 100); }}
-      />
+      <ErrorBoundary>
+        <ImageAnalysisPage
+          isPaidUser={isPaidUser}
+          onBack={() => { setPage('home'); window.scrollTo(0, 0); }}
+          onUpgrade={() => { setPage('payment'); setSelectedPlan(null); setTimeout(() => scrollTo('pricing'), 100); }}
+        />
+      </ErrorBoundary>
     );
   }
 
@@ -382,8 +400,8 @@ function App() {
             <button onClick={() => { setPage('trending'); window.scrollTo(0, 0); }} className="nav-tool-btn" style={{ color: '#0369a1' }}>
               <TrendingUp size={14} /> Trending
             </button>
-            <button onClick={() => { setPage('brand-dashboard'); window.scrollTo(0, 0); }} className="nav-tool-btn" style={{ color: '#a78bfa' }}>
-              <Crown size={14} /> Brands
+            <button onClick={() => { setPage('url-analysis'); window.scrollTo(0, 0); }} className="nav-tool-btn" style={{ color: '#7c3aed' }}>
+              <Link2 size={14} /> Analyze URL
             </button>
           </div>
 
@@ -493,12 +511,12 @@ function App() {
             }}>
               <TrendingUp size={15} /> Trending Hashtags
             </button>
-            <button onClick={() => { setMobileMenuOpen(false); setPage('battle'); window.scrollTo(0, 0); }} style={{
+            <button onClick={() => { setMobileMenuOpen(false); setPage('url-analysis'); window.scrollTo(0, 0); }} style={{
               display: 'flex', alignItems: 'center', gap: 8, width: '100%', textAlign: 'left',
               background: 'none', border: 'none', cursor: 'pointer',
-              padding: '10px 0', fontSize: 15, fontWeight: 600, color: '#f59e0b',
+              padding: '10px 0', fontSize: 15, fontWeight: 600, color: '#7c3aed',
             }}>
-              ⚔️ Reel Battles
+              <Link2 size={15} /> Analyze Reel URL
             </button>
             <button onClick={() => { setMobileMenuOpen(false); setShowReferral(true); }} style={{
               display: 'flex', alignItems: 'center', gap: 8, width: '100%', textAlign: 'left',
@@ -543,10 +561,13 @@ function App() {
 
               {isIdle && (
                 <>
-                  <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
+                    <span className="badge" style={{ background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0' }}>
+                      ✓ Free to try — no card needed
+                    </span>
                     <span className="badge" style={{ background: '#eef2ff', color: '#4f46e5', border: '1px solid #c7d2fe' }}>
                       <Sparkles size={12} />
-                      AI-Powered Content Generator
+                      AI-Powered
                     </span>
                   </div>
 
@@ -558,8 +579,8 @@ function App() {
                     <span className="gradient-text">viral content</span>
                   </h1>
                   <p style={{ textAlign: 'center', fontSize: 17, color: '#64748b', margin: '0 0 36px', lineHeight: 1.6 }}>
-                    Upload any video and get a scroll-stopping hook, engaging caption,
-                    trending hashtags and auto-subtitles — in seconds.
+                    Upload your first video <strong style={{ color: '#15803d' }}>free</strong> — get a scroll-stopping hook,
+                    engaging caption, trending hashtags and auto-subtitles in 30 seconds.
                   </p>
 
                   <div style={{ display: 'flex', justifyContent: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 36 }}>
@@ -575,10 +596,81 @@ function App() {
                       </span>
                     ))}
                   </div>
+
+                  {/* Social proof — stat + creator quotes */}
+                  <div style={{ marginBottom: 32 }}>
+                    {/* Videos boosted counter */}
+                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
+                      <div style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 8,
+                        background: 'linear-gradient(135deg, #fef3c7, #fef9ee)',
+                        border: '1px solid #fde68a', borderRadius: 24,
+                        padding: '8px 18px',
+                      }}>
+                        <span style={{ fontSize: 18 }}>🚀</span>
+                        <span style={{ fontSize: 14, fontWeight: 700, color: '#92400e' }}>
+                          12,847 videos boosted and counting
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Creator quotes */}
+                    <div style={{
+                      display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                      gap: 12,
+                    }}>
+                      {[
+                        { quote: 'My reel hit 2M views the day I used this hook. Actually insane.', name: 'Priya S.', handle: '@priya.creates', avatar: '👩🏽' },
+                        { quote: 'Went from 800 to 45K followers in 3 weeks. The hashtags are 🔥', name: 'Arjun M.', handle: '@arjunreels', avatar: '🧑🏾' },
+                        { quote: 'I was sleeping on captions. This changed everything fr.', name: 'Sneha R.', handle: '@sneha.viral', avatar: '👩🏻' },
+                      ].map(c => (
+                        <div key={c.handle} style={{
+                          background: 'white', border: '1px solid #e2e8f0',
+                          borderRadius: 14, padding: '14px 16px',
+                          boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+                        }}>
+                          <p style={{ fontSize: 13, color: '#334155', lineHeight: 1.55, margin: '0 0 10px', fontStyle: 'italic' }}>
+                            "{c.quote}"
+                          </p>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ fontSize: 24, lineHeight: 1 }}>{c.avatar}</span>
+                            <div>
+                              <p style={{ fontSize: 12, fontWeight: 700, color: '#0f172a', margin: 0 }}>{c.name}</p>
+                              <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>{c.handle}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Free trust strip — anchored right above the drop zone */}
+                  <div style={{
+                    display: 'flex', justifyContent: 'center', alignItems: 'center',
+                    gap: 20, flexWrap: 'wrap',
+                    background: 'linear-gradient(135deg, #f0fdf4, #f7fef9)',
+                    border: '1px solid #bbf7d0', borderRadius: 14,
+                    padding: '12px 20px', marginBottom: 16,
+                  }}>
+                    {[
+                      'First video free',
+                      'No credit card',
+                      'Results in 30 seconds',
+                    ].map(item => (
+                      <span key={item} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: '#15803d' }}>
+                        <span style={{
+                          width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
+                          background: '#15803d', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: 10, color: 'white', fontWeight: 800,
+                        }}>✓</span>
+                        {item}
+                      </span>
+                    ))}
+                  </div>
                 </>
               )}
 
-              <VideoUploader onUpload={(file) => upload(file, userId ?? undefined)} isUploading={state === 'uploading'} uploadPercent={uploadPercent} />
+              <VideoUploader onUpload={(file) => upload(file, userId ?? undefined)} isUploading={state === 'uploading'} uploadPercent={uploadPercent} isPaidUser={isPaidUser} />
 
               {isWorking && (
                 <div style={{ marginTop: 24 }}>
@@ -628,7 +720,7 @@ function App() {
         {/* ── Sections hidden while processing/complete ── */}
         <div style={{ display: isIdle ? undefined : 'none' }}>
           <div id="demo"><DemoSection /></div>
-          <div id="pricing"><PricingSection onSelectPlan={handleSelectPlan} /></div>
+          <div id="pricing"><PricingSection onSelectPlan={handleSelectPlan} onStartFree={() => { window.scrollTo({ top: 0, behavior: 'smooth' }); }} /></div>
           <div id="about"><AboutSection /></div>
         </div>
 

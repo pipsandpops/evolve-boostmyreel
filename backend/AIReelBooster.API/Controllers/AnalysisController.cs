@@ -161,6 +161,76 @@ public class AnalysisController : ControllerBase
         return File(stream, "video/mp4", enableRangeProcessing: true);
     }
 
+    [HttpPost("{jobId}/roast")]
+    public async Task<IActionResult> RoastReel(string jobId, CancellationToken ct)
+    {
+        var job = _jobStore.Get(jobId);
+        if (job == null) return NotFound(new { error = "Job not found." });
+        if (job.Status != JobStatus.Complete) return Conflict(new { error = "Job not complete yet." });
+        if (job.AnalysisResult == null) return BadRequest(new { error = "No analysis result available." });
+
+        var result     = job.AnalysisResult;
+        var transcript = job.Transcript ?? "[No speech detected]";
+        var viralScore = result.ViralScore?.ViralScore ?? 0;
+
+        try
+        {
+            var roast = await _aiGeneration.GenerateRoastAsync(
+                result.Hook, result.Caption, result.Hashtags, viralScore, transcript, ct);
+
+            return Ok(new RoastResponse(roast.Roast, roast.GlowUp));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Roast generation failed for job {JobId}", jobId);
+            return StatusCode(500, new { error = "Failed to generate roast." });
+        }
+    }
+
+    [HttpPost("{jobId}/cinematic")]
+    public async Task<IActionResult> GenerateCinematic(string jobId, CancellationToken ct)
+    {
+        var job = _jobStore.Get(jobId);
+        if (job == null) return NotFound(new { error = "Job not found." });
+        if (job.Status != JobStatus.Complete) return Conflict(new { error = "Job not complete yet." });
+        if (job.OriginalFilePath == null)
+            return BadRequest(new { error = "Missing source video file." });
+
+        // Return cached result if already generated
+        if (job.CinematicVideoFilePath != null && System.IO.File.Exists(job.CinematicVideoFilePath))
+            return Ok(new CinematicVideoResponse(jobId, $"/api/analysis/{jobId}/cinematic-video"));
+
+        try
+        {
+            var outputDir      = _storage.GetJobDirectory(jobId);
+            var durationSecs   = job.DurationSeconds ?? 30.0;
+            var cinematicPath  = await _videoProcessing.GenerateCinematicVideoAsync(
+                job.OriginalFilePath, outputDir, durationSecs, ct);
+
+            job.CinematicVideoFilePath = cinematicPath;
+            return Ok(new CinematicVideoResponse(jobId, $"/api/analysis/{jobId}/cinematic-video"));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Cinematic generation failed for job {JobId}", jobId);
+            return StatusCode(500, new { error = "Failed to generate cinematic video." });
+        }
+    }
+
+    [HttpGet("{jobId}/cinematic-video")]
+    public IActionResult StreamCinematicVideo(string jobId)
+    {
+        var job = _jobStore.Get(jobId);
+        if (job == null || job.CinematicVideoFilePath == null)
+            return NotFound(new { error = "Cinematic video not found." });
+
+        if (!System.IO.File.Exists(job.CinematicVideoFilePath))
+            return NotFound(new { error = "Cinematic video file missing." });
+
+        var stream = _storage.OpenFileStream(job.CinematicVideoFilePath);
+        return File(stream, "video/mp4", enableRangeProcessing: true);
+    }
+
     [HttpPost("{jobId}/improve")]
     public async Task<IActionResult> ImproveReel(
         string jobId,

@@ -6,6 +6,8 @@ import { HashtagCard } from './HashtagCard';
 import { SubtitlePanel } from './SubtitlePanel';
 import { VideoPreview } from './VideoPreview';
 import { ViralScoreCard } from './ViralScoreCard';
+import { CinematicCard } from './CinematicCard';
+import { RoastCard } from './RoastCard';
 import { Sparkles, VolumeX, Gift, Copy, Check } from 'lucide-react';
 
 interface ResultsPanelProps {
@@ -15,9 +17,27 @@ interface ResultsPanelProps {
   isPaidUser?: boolean;
   onUpgrade?: () => void;
   onOpenReferral?: () => void;
+  isUrlAnalysis?: boolean;
+  sourceUrl?: string;
+  sourcePlatform?: string;
 }
 
-export function ResultsPanel({ result, jobId, userId, isPaidUser = false, onUpgrade, onOpenReferral }: ResultsPanelProps) {
+function getEmbedUrl(url: string, platform: string): string | null {
+  if (platform === 'YouTube') {
+    const shortMatch = url.match(/youtube\.com\/shorts\/([A-Za-z0-9_-]+)/i);
+    const watchMatch = url.match(/[?&]v=([A-Za-z0-9_-]+)/i);
+    const shortUrl   = url.match(/youtu\.be\/([A-Za-z0-9_-]+)/i);
+    const id = shortMatch?.[1] ?? watchMatch?.[1] ?? shortUrl?.[1];
+    return id ? `https://www.youtube.com/embed/${id}` : null;
+  }
+  if (platform === 'Instagram') {
+    const m = url.match(/instagram\.com\/(?:reel|p)\/([A-Za-z0-9_-]+)/i);
+    return m ? `https://www.instagram.com/p/${m[1]}/embed/` : null;
+  }
+  return null;
+}
+
+export function ResultsPanel({ result, jobId, userId, isPaidUser = false, onUpgrade, onOpenReferral, isUrlAnalysis = false, sourceUrl = '', sourcePlatform = '' }: ResultsPanelProps) {
   const [linkCopied, setLinkCopied] = useState(false);
 
   const referralUrl = `https://boostmyreel.com/?ref=${userId}`;
@@ -122,10 +142,48 @@ export function ResultsPanel({ result, jobId, userId, isPaidUser = false, onUpgr
       {/* Two-column layout */}
       <div className="r-results-grid">
 
-        {/* Left: Video */}
+        {/* Left: Video or embedded player */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <VideoPreview jobId={jobId} metadata={result.metadata} />
-          <SubtitlePanel jobId={jobId} subtitles={result.subtitles} />
+          {isUrlAnalysis ? (
+            <>
+              {/* Embedded platform video */}
+              {(() => {
+                const embedUrl = getEmbedUrl(sourceUrl, sourcePlatform);
+                return embedUrl ? (
+                  <div style={{ borderRadius: 16, overflow: 'hidden', background: '#000', boxShadow: '0 4px 20px rgba(0,0,0,0.12)' }}>
+                    <div style={{ position: 'relative', paddingBottom: '177.78%', height: 0 }}>
+                      <iframe
+                        src={embedUrl}
+                        title={`${sourcePlatform} video`}
+                        allowFullScreen
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+                      />
+                    </div>
+                    <div style={{ padding: '10px 14px', background: '#0f172a' }}>
+                      <p style={{ margin: 0, fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>
+                        Original {sourcePlatform} video
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{
+                    borderRadius: 16, background: '#f1f5f9', border: '1px solid #e2e8f0',
+                    padding: 32, textAlign: 'center', color: '#64748b', fontSize: 13,
+                  }}>
+                    Video embed not available for this URL
+                  </div>
+                );
+              })()}
+              <SubtitlePanel jobId={jobId} subtitles={result.subtitles} />
+            </>
+          ) : (
+            <>
+              <VideoPreview jobId={jobId} metadata={result.metadata} isPaidUser={isPaidUser} />
+              <CinematicCard jobId={jobId} />
+              <SubtitlePanel jobId={jobId} subtitles={result.subtitles} />
+            </>
+          )}
         </div>
 
         {/* Right: AI results */}
@@ -140,8 +198,9 @@ export function ResultsPanel({ result, jobId, userId, isPaidUser = false, onUpgr
               viewPrediction={result.viewPrediction}
             />
           )}
-          <HookCard hook={result.hook} />
-          <CaptionCard caption={result.caption} />
+          <RoastCard jobId={jobId} />
+          <HookCard hook={result.hook} isPaidUser={isPaidUser} />
+          <CaptionCard caption={result.caption} isPaidUser={isPaidUser} />
           <HashtagCard hashtags={result.hashtags} />
         </div>
 

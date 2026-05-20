@@ -9,4 +9,5 @@ public interface IVideoProcessingService
     Task<string> ExtractAudioAsync(string videoPath, string outputDir, CancellationToken ct = default);
     Task<string> ExtractThumbnailAsync(string videoPath, string outputDir, CancellationToken ct = default);
     Task<string> BurnSubtitlesAsync(string videoPath, string srtPath, string outputDir, CancellationToken ct = default);
+    Task<string> GenerateCinematicVideoAsync(string videoPath, string outputDir, double durationSeconds, CancellationToken ct = default);
 }

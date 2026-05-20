@@ -13,4 +13,5 @@ public interface IAIGenerationService
     /// hardcoded fallback list in that case).
     /// </summary>
     Task<HashSet<string>> ExtractViralKeywordsAsync(string fullTranscript, CancellationToken ct = default);
+    Task<RoastResult> GenerateRoastAsync(string hook, string caption, List<string> hashtags, int viralScore, string transcript, CancellationToken ct = default);
 }

@@ -23,6 +23,12 @@ public class ViralScoreResult
     public string ImprovedHook { get; set; } = string.Empty;
 }
 
+public class RoastResult
+{
+    public string Roast { get; set; } = string.Empty;
+    public List<string> GlowUp { get; set; } = [];
+}
+
 public class SubtitleEntry
 {
     public int Index { get; set; }

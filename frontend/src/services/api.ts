@@ -2,6 +2,8 @@ import type {
   AgentChatResponse,
   AgentMessage,
   AnalysisResult,
+  CinematicVideoResponse,
+  RoastResponse,
   TrendingHashtagsResponse,
   AwardReferralResponse,
   BoosterRow,
@@ -164,6 +166,18 @@ export const api = {
     return request<BurnSubtitlesResponse>(`/analysis/${jobId}/subtitles/burn`, { method: 'POST' });
   },
 
+  roastReel(jobId: string): Promise<RoastResponse> {
+    return request<RoastResponse>(`/analysis/${jobId}/roast`, { method: 'POST' });
+  },
+
+  generateCinematic(jobId: string): Promise<CinematicVideoResponse> {
+    return request<CinematicVideoResponse>(`/analysis/${jobId}/cinematic`, { method: 'POST' });
+  },
+
+  getCinematicVideoUrl(jobId: string): string {
+    return `${BASE}/analysis/${jobId}/cinematic-video`;
+  },
+
   getBurnedVideoUrl(jobId: string): string {
     return `${BASE}/analysis/${jobId}/burned-video`;
   },
@@ -310,6 +324,16 @@ export const api = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ jobId, aspectRatio }),
+    });
+  },
+
+  // ── URL Reel Analysis ─────────────────────────────────────────────────────────
+
+  analyzeUrl(url: string): Promise<{ jobId: string; platform: string }> {
+    return request<{ jobId: string; platform: string }>('/url/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url }),
     });
   },
 

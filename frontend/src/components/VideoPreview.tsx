@@ -5,9 +5,10 @@ import { Monitor, Clock, Gauge } from 'lucide-react';
 interface VideoPreviewProps {
   jobId: string;
   metadata: VideoMetadata | null;
+  isPaidUser?: boolean;
 }
 
-export function VideoPreview({ jobId, metadata }: VideoPreviewProps) {
+export function VideoPreview({ jobId, metadata, isPaidUser = false }: VideoPreviewProps) {
   const formatDuration = (secs: number | null) => {
     if (!secs) return '—';
     const m = Math.floor(secs / 60);
@@ -24,6 +25,18 @@ export function VideoPreview({ jobId, metadata }: VideoPreviewProps) {
           controls
           style={{ width: '100%', maxHeight: 360, display: 'block', objectFit: 'contain' }}
         />
+        {/* Watermark overlay for free users */}
+        {!isPaidUser && (
+          <div style={{
+            position: 'absolute', bottom: 10, right: 10,
+            background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)',
+            color: 'white', fontSize: 11, fontWeight: 700,
+            padding: '4px 10px', borderRadius: 99,
+            letterSpacing: 0.4, pointerEvents: 'none',
+          }}>
+            BoostMyReel
+          </div>
+        )}
       </div>
 
       {/* Metadata row */}

@@ -3,6 +3,7 @@ namespace AIReelBooster.API.Configuration;
 public class AppSettings
 {
     public FFmpegSettings        FFmpeg               { get; set; } = new();
+    public YtDlpSettings         YtDlp                { get; set; } = new();
     public WhisperSettings       Whisper              { get; set; } = new();
     public ClaudeSettings        Claude               { get; set; } = new();
     public StorageSettings       Storage              { get; set; } = new();
@@ -91,6 +92,12 @@ public class RazorpaySettings
 public class FFmpegSettings
 {
     public string BinaryPath { get; set; } = "./ffmpeg-bin";
+}
+
+public class YtDlpSettings
+{
+    /// <summary>Path to the yt-dlp binary. Defaults to "yt-dlp" (expected in PATH).</summary>
+    public string BinaryPath { get; set; } = "yt-dlp";
 }
 
 public class WhisperSettings

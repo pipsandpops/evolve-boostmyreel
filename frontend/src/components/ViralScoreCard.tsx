@@ -432,10 +432,10 @@ export function ViralScoreCard({
                     scrollbarWidth: 'thin',
                     scrollbarColor: 'rgba(6,182,212,0.3) transparent',
                   }}>
-                    {prediction.scenarios.map((s) => {
+                    {prediction.scenarios.map((s, i) => {
                       const tc = tierColor(s.tier);
                       return (
-                        <div key={s.followers} style={{
+                        <div key={`${s.followers}-${i}`} style={{
                           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                           background: 'rgba(255,255,255,0.04)',
                           borderRadius: 8, padding: '7px 12px',

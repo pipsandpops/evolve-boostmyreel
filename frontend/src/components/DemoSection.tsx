@@ -600,6 +600,107 @@ export function DemoSection() {
           </div>
         </div>
 
+        {/* ── Before / After comparison ── */}
+        <div style={{ marginTop: 64 }}>
+          <div style={{ textAlign: 'center', marginBottom: 32 }}>
+            <h3 style={{ fontSize: 'clamp(22px, 3.5vw, 30px)', fontWeight: 800, color: '#0f172a', margin: '0 0 10px', letterSpacing: -0.6 }}>
+              Generic caption vs your AI caption
+            </h3>
+            <p style={{ color: '#64748b', fontSize: 14, margin: 0 }}>
+              The difference is what separates 200 views from 2 million
+            </p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 0, borderRadius: 20, overflow: 'hidden', border: '1px solid #e2e8f0', boxShadow: '0 4px 24px rgba(0,0,0,0.07)' }}>
+
+            {/* BEFORE */}
+            <div style={{ background: '#f8fafc', padding: '28px 28px 24px', borderRight: '1px solid #e2e8f0', position: 'relative' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 18 }}>
+                <div style={{
+                  width: 28, height: 28, borderRadius: 8, flexShrink: 0,
+                  background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 14,
+                }}>✗</div>
+                <div>
+                  <p style={{ fontSize: 11, fontWeight: 800, color: '#dc2626', margin: 0, letterSpacing: 0.8, textTransform: 'uppercase' }}>Before — What you'd write</p>
+                </div>
+              </div>
+
+              <div style={{
+                background: 'white', border: '1px solid #e2e8f0', borderRadius: 12,
+                padding: '16px 18px', marginBottom: 20, position: 'relative',
+              }}>
+                <p style={{ fontSize: 14, color: '#64748b', lineHeight: 1.7, margin: 0 }}>
+                  Check out my latest video! Hope you guys enjoy it 😊 Like and subscribe for more content. Let me know what you think in the comments below!
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {[
+                  { label: 'Curiosity gap', value: 'None', bad: true },
+                  { label: 'Emotional trigger', value: 'None', bad: true },
+                  { label: 'Call to action', value: 'Weak', bad: true },
+                  { label: 'Average reach', value: '~200 views', bad: true },
+                ].map(m => (
+                  <div key={m.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: 12, color: '#94a3b8' }}>{m.label}</span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: '#dc2626', background: '#fee2e2', padding: '2px 8px', borderRadius: 99 }}>{m.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* VS divider — shows on mobile as a row, desktop hidden via grid */}
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
+              padding: '10px 0',
+              gridColumn: '1 / -1',
+            }} className="ba-vs-row">
+              <span style={{ fontSize: 16, fontWeight: 900, color: 'white', letterSpacing: 2 }}>VS</span>
+            </div>
+
+            {/* AFTER */}
+            <div style={{ background: 'linear-gradient(160deg, #f5f3ff 0%, #fdf2f8 100%)', padding: '28px 28px 24px', position: 'relative' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 18 }}>
+                <div style={{
+                  width: 28, height: 28, borderRadius: 8, flexShrink: 0,
+                  background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 14,
+                }}>✦</div>
+                <div>
+                  <p style={{ fontSize: 11, fontWeight: 800, color: '#4f46e5', margin: 0, letterSpacing: 0.8, textTransform: 'uppercase' }}>After — AI-generated caption</p>
+                </div>
+              </div>
+
+              <div style={{
+                background: 'white', border: '1px solid #ddd6fe', borderRadius: 12,
+                padding: '16px 18px', marginBottom: 20,
+                boxShadow: '0 2px 12px rgba(79,70,229,0.08)',
+              }}>
+                <p style={{ fontSize: 14, color: '#1e293b', lineHeight: 1.7, margin: 0, fontWeight: 500 }}>
+                  Most creators miss this simple trick that doubles engagement overnight. Save this for later and drop a 💬 if you want the full breakdown!
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {[
+                  { label: 'Curiosity gap', value: 'Strong ✓' },
+                  { label: 'Emotional trigger', value: 'FOMO ✓' },
+                  { label: 'Call to action', value: 'Save + Comment ✓' },
+                  { label: 'Average reach', value: '2M+ views ✓' },
+                ].map(m => (
+                  <div key={m.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: 12, color: '#6b7280' }}>{m.label}</span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: '#4f46e5', background: '#eef2ff', padding: '2px 8px', borderRadius: 99 }}>{m.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* How it works */}
         <div style={{ marginTop: 64 }}>
           <h3 style={{ textAlign: 'center', fontSize: 22, fontWeight: 800, color: '#0f172a', margin: '0 0 32px', letterSpacing: -0.5 }}>
@@ -639,6 +740,14 @@ export function DemoSection() {
         }
         .tab-label-text { display: none; }
         @media (min-width: 480px) { .tab-label-text { display: inline; } }
+
+        /* Before/After VS divider: horizontal strip on mobile, hidden on desktop (border handles separation) */
+        .ba-vs-row { display: flex; }
+        @media (min-width: 640px) {
+          .ba-vs-row {
+            display: none;
+          }
+        }
       `}</style>
     </section>
   );

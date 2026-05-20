@@ -3,13 +3,17 @@ import { Copy, Check, FileText } from 'lucide-react';
 
 interface CaptionCardProps {
   caption: string;
+  isPaidUser?: boolean;
 }
 
-export function CaptionCard({ caption }: CaptionCardProps) {
+const WATERMARK = '\n\n— via BoostMyReel (boostmyreel.com)';
+
+export function CaptionCard({ caption, isPaidUser = false }: CaptionCardProps) {
   const [copied, setCopied] = useState(false);
 
   const copy = async () => {
-    await navigator.clipboard.writeText(caption);
+    const text = isPaidUser ? caption : caption + WATERMARK;
+    await navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

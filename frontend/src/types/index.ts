@@ -1,3 +1,17 @@
+// ── Roast Mode ────────────────────────────────────────────────────────────────
+
+export interface RoastResponse {
+  roast:   string;
+  glowUp:  string[];
+}
+
+// ── Cinematic Video ───────────────────────────────────────────────────────────
+
+export interface CinematicVideoResponse {
+  jobId:    string;
+  videoUrl: string;
+}
+
 // ── Trending Hashtags ─────────────────────────────────────────────────────────
 
 export interface TrendingHashtag {
