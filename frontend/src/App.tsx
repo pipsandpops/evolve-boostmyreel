@@ -285,7 +285,7 @@ function App() {
       {showRecover && (
         <RecoverAccessModal
           onClose={() => setShowRecover(false)}
-          onRecovered={() => { setShowRecover(false); refreshUserStatus(); }}
+          onRecovered={() => { setShowRecover(false); window.location.reload(); }}
         />
       )}
 
